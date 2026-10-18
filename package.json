@@ -1,0 +1,57 @@
+{
+  "name": "@molesignal/cli",
+  "version": "0.1.0",
+  "description": "MoleSignal on the command line: sign in, read and follow logs, and connect AI agent tools to MoleSignal over MCP",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "molesignal": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup --config tsup.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test \"test/*.test.mjs\"",
+    "check": "npm run typecheck && npm test",
+    "prepublishOnly": "npm run check"
+  },
+  "keywords": [
+    "molesignal",
+    "mcp",
+    "model-context-protocol",
+    "logs",
+    "cli",
+    "observability"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/molesignal/molesignal-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/molesignal/molesignal-cli/issues"
+  },
+  "homepage": "https://github.com/molesignal/molesignal-cli#readme",
+  "author": {
+    "name": "MoleSignal",
+    "email": "opensource@molesignal.io"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2"
+  }
+}
