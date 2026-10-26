@@ -153,3 +153,66 @@ test('a tool that writes initialize and its next messages at once still gets its
   await serving;
   molesignal.close();
 });
+
+test('a session MoleSignal lost, as after a restart, is opened again and the request sent again', { timeout: 10_000 }, async () => {
+  let session = 1;
+  let restarted = false;
+  const initializes = [];
+  const server = createServer(async (request, response) => {
+    if (request.method === 'DELETE') return response.writeHead(200).end();
+    if (request.method === 'GET') return response.writeHead(405).end();
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const message = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    const known = request.headers['mcp-session-id'] === `session-${session}`;
+    if (message.method === 'initialize') {
+      initializes.push(message.id);
+      response.writeHead(200, { 'content-type': 'application/json', 'mcp-session-id': `session-${session}` });
+      return response.end(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: message.id,
+          result: { protocolVersion: '2025-03-26', capabilities: { tools: {} }, serverInfo: { name: 'MoleSignal', version: 'test' } },
+        }),
+      );
+    }
+    if (!known) return response.writeHead(404).end('Not Found: Session not found');
+    if (!('id' in message)) return response.writeHead(202).end();
+    // The first list is answered, then the server restarts and forgets its sessions.
+    const tools = [{ name: restarted ? 'after' : 'before', inputSchema: { type: 'object' } }];
+    if (!restarted) {
+      restarted = true;
+      session = 2;
+    }
+    response.writeHead(200, { 'content-type': 'application/json', 'mcp-session-id': `session-${session}` });
+    response.end(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: { tools } }));
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+  const stdin = new PassThrough();
+  const stdout = new PassThrough();
+  const next = messages(stdout);
+  const logged = [];
+  const serving = serveStdio(
+    { connection: { url: `http://127.0.0.1:${server.address().port}`, token: 'good' } },
+    { stdin, stdout, log: (line) => logged.push(line) },
+  );
+
+  stdin.write(initialize(1));
+  assert.equal((await next()).id, 1);
+  stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
+  stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} })}\n`);
+  assert.deepEqual((await next()).result.tools.map((tool) => tool.name), ['before']);
+
+  stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} })}\n`);
+  const after = await next();
+  assert.equal(after.id, 3);
+  assert.deepEqual(after.result.tools.map((tool) => tool.name), ['after']);
+  // The tool saw only its own answers: the second initialize was answered to the bridge.
+  assert.deepEqual(initializes, [1, 'molesignal-reopen-1']);
+  assert.match(logged.join('\n'), /opened a new one/);
+
+  stdin.end();
+  await serving;
+  server.close();
+});

@@ -5,8 +5,8 @@ import {
   formatLog,
   formatStreams,
   LogFollower,
+  logCondition,
   logsSql,
-  parseDuration,
   readLogs,
   rowsOf,
   ToolError,
@@ -14,15 +14,6 @@ import {
 
 const SECOND = 1_000_000;
 const row = (seconds, message, extra = {}) => ({ _timestamp: seconds * SECOND, message, ...extra });
-
-test('durations are written with their unit', () => {
-  assert.equal(parseDuration('30s'), 30_000);
-  assert.equal(parseDuration('10m'), 600_000);
-  assert.equal(parseDuration('2h'), 7_200_000);
-  assert.equal(parseDuration('1d'), 86_400_000);
-  assert.equal(parseDuration('500ms'), 500);
-  for (const wrong of ['10', 'm', '0s', '-5m', '1w']) assert.throws(() => parseDuration(wrong), /not a duration/);
-});
 
 test('a read is one SQL statement over the quoted stream', () => {
   assert.equal(
@@ -201,4 +192,29 @@ test('streams are listed as aligned columns', () => {
       'k8s       140     default',
     ],
   );
+});
+
+test('a read of some fields selects them with the time', () => {
+  assert.equal(
+    logsSql('app_logs', undefined, 'oldest', 50, ['level', 'trace_id']),
+    'SELECT "_timestamp", "level", "trace_id" FROM "app_logs" ORDER BY _timestamp ASC LIMIT 50',
+  );
+});
+
+test('--where and -q both hold, the field query read as the Logs page reads it', () => {
+  assert.equal(logCondition(undefined, undefined), undefined);
+  assert.equal(logCondition("status >= 500", undefined), 'status >= 500');
+  assert.equal(logCondition(undefined, "level = 'error'"), `"level" = 'error'`);
+  assert.equal(
+    logCondition('status >= 500', "level = 'error' AND timeout"),
+    `(status >= 500) AND ("level" = 'error' AND "message" LIKE '%timeout%')`,
+  );
+});
+
+test('a log of some fields is its time and those fields', () => {
+  const line = formatLog(row(1, 'boot', { level: 'info', trace_id: 'abc', note: 'two words' }), {
+    utc: true,
+    fields: ['trace_id', 'note', 'missing'],
+  });
+  assert.equal(line, '1970-01-01 00:00:01.000 trace_id=abc note="two words"');
 });

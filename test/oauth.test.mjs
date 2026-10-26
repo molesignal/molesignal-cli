@@ -58,13 +58,16 @@ async function fakeAuthorizationServer() {
   return { url: `http://127.0.0.1:${server.address().port}`, seen, close: () => server.close() };
 }
 
-test('a browser sign-in registers the machine, sends the person off and keeps the tokens', { timeout: 15_000 }, async () => {
+test('a browser sign-in registers the machine, sends the person off and keeps the tokens in the profile', { timeout: 15_000 }, async () => {
   const authorization = await fakeAuthorizationServer();
   const path = join(await mkdtemp(join(tmpdir(), 'molesignal-cli-')), 'config.json');
   const store = await ConfigStore.open(path);
   let opened = null;
+  const warnings = [];
+  const warn = console.warn;
+  console.warn = (...args) => warnings.push(args.join(' '));
 
-  await signIn(store, `${authorization.url}/`, {
+  await signIn(store, 'work', `${authorization.url}/`, {
     // The person approves at once: the browser comes back with a code and the same state.
     open: (url) => {
       opened = url;
@@ -85,11 +88,17 @@ test('a browser sign-in registers the machine, sends the person off and keeps th
   assert.ok(authorization.seen.exchanged.code_verifier);
 
   const saved = await readConfig(path);
-  assert.equal(saved.url, authorization.url);
-  assert.equal(saved.oauth.client.client_id, 'client-1');
-  assert.equal(saved.oauth.tokens.access_token, 'access-1');
-  assert.equal(saved.oauth.tokens.refresh_token, 'refresh-1');
-  assert.equal(saved.oauth.codeVerifier, undefined);
+  assert.equal(saved.current, 'work');
+  const profile = saved.profiles.work;
+  assert.equal(profile.url, authorization.url);
+  assert.equal(profile.oauth.client.client_id, 'client-1');
+  assert.equal(profile.oauth.tokens.access_token, 'access-1');
+  assert.equal(profile.oauth.tokens.refresh_token, 'refresh-1');
+  assert.equal(profile.oauth.codeVerifier, undefined);
+  // The authorization server found when the browser was sent off is kept, so the code is redeemed with it.
+  assert.equal(profile.oauth.discovery.authorizationServerUrl, authorization.url);
+  console.warn = warn;
+  assert.deepEqual(warnings.filter((line) => line.includes('mcp-sdk')), []);
   authorization.close();
 });
 
@@ -97,11 +106,11 @@ test('a sign-in that does not finish leaves the saved one as it was', { timeout:
   const authorization = await fakeAuthorizationServer();
   const path = join(await mkdtemp(join(tmpdir(), 'molesignal-cli-')), 'config.json');
   const store = await ConfigStore.open(path);
-  store.config = { url: 'https://molesignal.example.com', token: 'saved-token' };
+  store.config = { current: 'default', profiles: { default: { url: 'https://molesignal.example.com', token: 'saved-token' } } };
   await store.save();
 
   await assert.rejects(
-    signIn(store, authorization.url, {
+    signIn(store, 'default', authorization.url, {
       // The person refuses in the browser.
       open: (url) => {
         const back = new URL(url.searchParams.get('redirect_uri'));
@@ -113,8 +122,11 @@ test('a sign-in that does not finish leaves the saved one as it was', { timeout:
     /refused: access_denied/,
   );
 
-  assert.deepEqual(await readConfig(path), { url: 'https://molesignal.example.com', token: 'saved-token' });
-  assert.equal(store.config.token, 'saved-token');
+  assert.deepEqual(await readConfig(path), {
+    current: 'default',
+    profiles: { default: { url: 'https://molesignal.example.com', token: 'saved-token' } },
+  });
+  assert.equal(store.config.profiles.default.token, 'saved-token');
   authorization.close();
 });
 

@@ -1,7 +1,7 @@
 {
   "name": "@molesignal/cli",
   "version": "0.1.0",
-  "description": "MoleSignal on the command line: sign in, read and follow logs, and connect AI agent tools to MoleSignal over MCP",
+  "description": "MoleSignal on the command line: logs, metrics, traces, incidents and approvals, deployments, source maps and symbols from CI, and MCP over stdio for AI agent tools",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
@@ -11,6 +11,7 @@
     "dist",
     "README.md",
     "README.zh-CN.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
@@ -22,11 +23,18 @@
   },
   "keywords": [
     "molesignal",
+    "observability",
+    "logs",
+    "metrics",
+    "traces",
+    "apm",
+    "rum",
+    "source-maps",
+    "deployments",
+    "incidents",
     "mcp",
     "model-context-protocol",
-    "logs",
-    "cli",
-    "observability"
+    "cli"
   ],
   "engines": {
     "node": ">=20"
@@ -46,12 +54,13 @@
     "name": "MoleSignal",
     "email": "opensource@molesignal.io"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "1.32.0"
-  },
   "devDependencies": {
     "@types/node": "^22.7.4",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
+    "undici": "6.29.1"
   }
 }
