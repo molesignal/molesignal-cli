@@ -29,7 +29,8 @@ export { fieldsOf, formatValues, valuesOf } from './fields.js';
 export { formatIncident, formatIncidents, incidentsOf } from './incidents.js';
 export type { Incident } from './incidents.js';
 export { IntakeSender, lineRecord } from './intake.js';
-export { downloadResults, formatJobs, jobsOf } from './jobs.js';
+export { downloadResults, formatJobs, jobsOf, submitRequest } from './jobs.js';
+export type { SubmitOptions } from './jobs.js';
 export {
   formatLog,
   LogFollower,

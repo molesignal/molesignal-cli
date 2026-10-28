@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- **PromQL search jobs at a step.** `search-jobs submit --promql --step 1m` reads
+  a point every step. MoleSignal no longer derives the step from `--limit`:
+  without `--step` a PromQL job reads the value at the end of the window.
+
 ## 0.1.0
 
 First release of the `molesignal` command, for Node.js 20 and later.

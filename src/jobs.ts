@@ -94,6 +94,36 @@ export async function downloadResults(
   }
 }
 
+/** The options `search-jobs submit` reads. */
+export interface SubmitOptions {
+  stream?: string | undefined;
+  type?: string | undefined;
+  promql?: boolean | undefined;
+  step?: string | undefined;
+  since?: string | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+  limit?: string | undefined;
+  keep?: string | undefined;
+}
+
+/** What `search-jobs submit` asks for. PromQL reads the value at the end of the window, or a point every `--step`. */
+export function submitRequest(statement: string, options: SubmitOptions, nowMicros?: number): Record<string, unknown> {
+  if (!statement) throw new UsageError('Which statement? Run `molesignal search-jobs submit "SELECT … FROM <stream>"`');
+  if (options.step && !options.promql) throw new UsageError('--step goes with --promql: a SQL job has no step');
+  const stream = options.promql ? undefined : (options.stream ?? streamOfSql(statement));
+  if (!options.promql && !stream) throw new UsageError('Which stream does it read? Add --stream <stream>');
+  return {
+    language: options.promql ? 'promql' : 'sql',
+    statement,
+    time_range: timeWindow(options, '1d', nowMicros),
+    ...(stream ? { stream: { name: stream, stream_type: streamType(options.type) } } : {}),
+    ...(options.limit ? { limit: parseCount(options.limit, '--limit', 100_000) } : {}),
+    ...(options.step ? { step_micros: Math.round(parseDuration(options.step) * 1000) } : {}),
+    ...(options.keep ? { ttl_secs: Math.round(parseDuration(options.keep) / 1000) } : {}),
+  };
+}
+
 const usage = `Usage: molesignal search-jobs [options]
        molesignal search-jobs submit "<statement>" [options]
        molesignal search-jobs show <job>
@@ -108,6 +138,7 @@ Options:
   --stream <stream>     With submit: the stream (default: the first one after FROM)
   --type <type>         With submit: the stream's kind, logs (default), traces, metrics…
   --promql              With submit: the statement is PromQL, not SQL
+  --step <duration>     With --promql: a point every step, such as 1m (default: one, at the end)
   --since <duration>    With submit: how far back it reads (default 1d)
   --from <time>         With submit: start at a time instead
   --to <time>           With submit: end at a time instead of now
@@ -138,6 +169,7 @@ export const searchJobsCommand: Command = {
       stream: { type: 'string' },
       type: { type: 'string' },
       promql: { type: 'boolean' },
+      step: { type: 'string' },
       since: { type: 'string' },
       from: { type: 'string' },
       to: { type: 'string' },
@@ -152,18 +184,7 @@ export const searchJobsCommand: Command = {
     const color = useColor();
 
     if (action === 'submit') {
-      const statement = rest.join(' ').trim();
-      if (!statement) throw new UsageError('Which statement? Run `molesignal search-jobs submit "SELECT … FROM <stream>"`');
-      const stream = values.promql ? undefined : (values.stream ?? streamOfSql(statement));
-      if (!values.promql && !stream) throw new UsageError('Which stream does it read? Add --stream <stream>');
-      const request = {
-        language: values.promql ? 'promql' : 'sql',
-        statement,
-        time_range: timeWindow(values, '1d'),
-        ...(stream ? { stream: { name: stream, stream_type: streamType(values.type) } } : {}),
-        ...(values.limit ? { limit: parseCount(values.limit, '--limit', 100_000) } : {}),
-        ...(values.keep ? { ttl_secs: Math.round(parseDuration(values.keep) / 1000) } : {}),
-      };
+      const request = submitRequest(rest.join(' ').trim(), values);
 
       return withSession(
         values,
