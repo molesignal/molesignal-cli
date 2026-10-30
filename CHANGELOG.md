@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - **Alert rules as files.** `alerts rules export` writes the alert rules as a
   bundle that names escalation policies and child rules; `alerts rules apply`
