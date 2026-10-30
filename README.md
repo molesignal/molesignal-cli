@@ -57,11 +57,32 @@ molesignal search-jobs submit "SELECT * FROM app_logs WHERE level = 'error'" --s
 molesignal incidents                          # the active incidents
 molesignal incidents show <incident> --rca
 molesignal incidents ack <incident>
+molesignal incidents create --title "Checkout fails for EU cards" --severity critical --priority P1
 molesignal oncall
 molesignal approvals                          # approval requests waiting, or approved
 molesignal annotate "Release 2.4.0" --tags release --yes
 molesignal synthetics run "Checkout API" --wait --yes
 ```
+
+## Alerting as files
+
+```bash
+molesignal alerts rules export -o rules.json  # every rule, policies and child rules named
+molesignal alerts rules apply -f rules.json --dry-run
+molesignal alerts rules apply -f prometheus-rules.yaml
+molesignal alerts schedules export -o schedules.json
+molesignal alerts policies export -o policies.json
+molesignal alerts routing export -o routing.json
+```
+
+`alerts rules apply` takes a bundle exported by MoleSignal or a Prometheus
+alerting rule file (`PrometheusRule` too). `policies`, `schedules` and
+`routing` take bundles of escalation policies, on-call schedules and routing
+rules; they name users by email and policies, schedules, teams and holiday
+calendars by name. Items are matched by name; the whole file is tried first and
+written only when nothing fails, and the command exits with 1 when something
+does, so it fits a CI step. Apply schedules before the policies that page them,
+and policies before the rules and routing rules that name them.
 
 A change goes through the organization's tool policy, as it does for Mole
 Agent: it runs at once, asks to be confirmed (`--yes` confirms ahead of time),

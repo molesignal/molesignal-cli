@@ -1,3 +1,5 @@
+export { formatImport, importCounts } from './alerts.js';
+export type { ImportItem, ImportReport } from './alerts.js';
 export { sourceMaps, symbolFiles, flutterTarget, uploadArtifact } from './artifacts.js';
 export type { Artifact, BuildIdentity } from './artifacts.js';
 export { isElf, isMachO, readElf, readMachO } from './binaries.js';
@@ -26,7 +28,7 @@ export { networkCause } from './doctor.js';
 export { mcpEndpoint, serverAddress } from './endpoint.js';
 export { fieldQuerySql } from './fieldQuery.js';
 export { fieldsOf, formatValues, valuesOf } from './fields.js';
-export { formatIncident, formatIncidents, incidentsOf } from './incidents.js';
+export { createInput, formatIncident, formatIncidents, incidentsOf } from './incidents.js';
 export type { Incident } from './incidents.js';
 export { IntakeSender, lineRecord } from './intake.js';
 export { downloadResults, formatJobs, jobsOf, submitRequest } from './jobs.js';

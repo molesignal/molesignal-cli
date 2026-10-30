@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- **Alert rules as files.** `alerts rules export` writes the alert rules as a
+  bundle that names escalation policies and child rules; `alerts rules apply`
+  applies such a bundle or a Prometheus alerting rule file, tried first,
+  written at once, exiting with 1 when a rule fails.
+- **Escalation policies, schedules and routing rules as files.**
+  `alerts policies|schedules|routing export|apply` do the same for them; users
+  are named by email, policies, schedules, teams and holiday calendars by name.
+- **Incidents opened by hand.** `incidents create --title …` opens an incident
+  with a severity, priority, urgency, services and labels, routed like an alert
+  or paging a team, a policy or people; it goes through the tool policy as
+  `ack` and `resolve` do.
+
 ## 0.2.0
 
 - **PromQL search jobs at a step.** `search-jobs submit --promql --step 1m` reads

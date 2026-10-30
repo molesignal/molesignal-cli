@@ -67,10 +67,15 @@ const usage = `Usage: molesignal incidents [options]
        molesignal incidents show <incident> [--rca]
        molesignal incidents ack <incident>
        molesignal incidents resolve <incident>
+       molesignal incidents create --title <text> [options]
 
 Lists incidents, newest first. \`show\` prints one, with its root-cause analysis
-when --rca is given. \`ack\` and \`resolve\` change it through MoleSignal's tool
-policy: at once, after you confirm, or once reviewers approve.
+when --rca is given. \`ack\`, \`resolve\` and \`create\` go through MoleSignal's
+tool policy: at once, after you confirm, or once reviewers approve.
+
+\`create\` opens an incident by hand, for a problem no rule caught, such as a
+customer report. It is routed like an alert unless --team, --policy or --user
+says who takes it.
 
 Options:
   --status <status>     active (default), resolved or all
@@ -79,15 +84,29 @@ Options:
   --rca                 With show: print the root-cause analysis too
   --json                Print JSON
   --web                 With show: open the incident in MoleSignal instead
+
+Options of create:
+  --title <text>        What happened (required)
+  --description <text>  More about it, in Markdown
+  --severity <level>    critical, error (default), warning or info
+  --priority <P1…P9>    A priority level of the organization
+  --urgency <key>       An urgency level (high, low, or one the organization added);
+                        left out, the escalation policy decides
+  --service <name>      An affected service; repeat for several
+  --label <key=value>   A label; repeat for several
+  --team <team id>      Page this team's on-call policy
+  --policy <policy id>  Page along this escalation policy
+  --user <user id>      Page these people directly; repeat for several
+  --major               Declare it a major incident at once
 ${CHANGE_HELP}
 ${CONNECTION_HELP}
 
-Exit status of ack and resolve: 0 when done, 3 when it waits for approval.`;
+Exit status of ack, resolve and create: 0 when done, 3 when it waits for approval.`;
 
 export const incidentsCommand: Command = {
   name: 'incidents',
   group: 'On-call and changes',
-  summary: 'Incidents: list, show with root cause, acknowledge, resolve',
+  summary: 'Incidents: list, show with root cause, acknowledge, resolve, open by hand',
   usage,
 
   async run(args) {
@@ -100,6 +119,17 @@ export const incidentsCommand: Command = {
       rca: { type: 'boolean' },
       json: { type: 'boolean' },
       web: { type: 'boolean' },
+      title: { type: 'string' },
+      description: { type: 'string' },
+      severity: { type: 'string' },
+      priority: { type: 'string' },
+      urgency: { type: 'string' },
+      service: { type: 'string', multiple: true },
+      label: { type: 'string', multiple: true },
+      team: { type: 'string' },
+      policy: { type: 'string' },
+      user: { type: 'string', multiple: true },
+      major: { type: 'boolean' },
     });
     const [action, ...rest] = positionals;
     const color = useColor();
@@ -147,7 +177,24 @@ export const incidentsCommand: Command = {
       );
     }
 
-    if (action) throw new UsageError(`Unknown "${action}": use show, ack or resolve; see \`molesignal incidents --help\``);
+    if (action === 'create') {
+      if (rest.length > 0) throw new UsageError(`Unexpected "${rest[0]}"; see \`molesignal incidents --help\``);
+      const input = createInput(values);
+      return withSession(
+        values,
+        async (session, signed) => {
+          const options = changeOptions(values, signed.credentials.connection.url, {
+            reason: 'Opened from the molesignal command line',
+            impact: `A new incident "${input.title}" is opened and its responders are paged`,
+          });
+          const outcome = await makeChange(session, 'create_incident', input, options);
+          return reportChange(outcome, `Opened incident "${input.title}"`, options);
+        },
+        confirmations(values),
+      );
+    }
+
+    if (action) throw new UsageError(`Unknown "${action}": use show, ack, resolve or create; see \`molesignal incidents --help\``);
 
     const status = values.status ?? 'active';
     if (!['active', 'resolved', 'all'].includes(status)) throw new UsageError('--status is one of active, resolved, all');
@@ -166,3 +213,64 @@ export const incidentsCommand: Command = {
     else print(formatIncidents(incidents, { color, width: terminalWidth() }));
   },
 };
+
+const SEVERITIES = ['critical', 'error', 'warning', 'info'];
+
+/** What `incidents create` sends to the `create_incident` tool, from its options. */
+export function createInput(values: {
+  title?: string | undefined;
+  description?: string | undefined;
+  severity?: string | undefined;
+  priority?: string | undefined;
+  urgency?: string | undefined;
+  service?: string[] | undefined;
+  label?: string[] | undefined;
+  team?: string | undefined;
+  policy?: string | undefined;
+  user?: string[] | undefined;
+  major?: boolean | undefined;
+}): Record<string, unknown> & { title: string } {
+  const title = values.title?.trim();
+  if (!title) throw new UsageError('What happened? Pass --title <text>');
+
+  const severity = values.severity?.trim().toLowerCase() ?? 'error';
+  if (!SEVERITIES.includes(severity)) throw new UsageError('--severity is one of critical, error, warning, info');
+
+  const priority = values.priority?.trim().toUpperCase();
+  if (priority !== undefined && !/^P[1-9]$/.test(priority)) throw new UsageError('--priority is P1 to P9');
+
+  const urgency = values.urgency?.trim().toLowerCase();
+  if (urgency !== undefined && !/^[a-z][a-z0-9_]{0,31}$/.test(urgency)) {
+    throw new UsageError('--urgency is the key of an urgency level, such as high or low');
+  }
+
+  const chosen = [values.team, values.policy, values.user?.length ? 'users' : undefined].filter(Boolean);
+  if (chosen.length > 1) throw new UsageError('Pass one of --team, --policy or --user');
+
+  const labels: Record<string, string> = {};
+  for (const pair of values.label ?? []) {
+    const at = pair.indexOf('=');
+    if (at <= 0) throw new UsageError(`--label ${pair}: write key=value`);
+    labels[pair.slice(0, at).trim()] = pair.slice(at + 1).trim();
+  }
+
+  const assign = values.team
+    ? { kind: 'team', team_id: values.team }
+    : values.policy
+      ? { kind: 'policy', escalation_policy_id: values.policy }
+      : values.user?.length
+        ? { kind: 'users', user_ids: values.user }
+        : { kind: 'auto' };
+
+  return {
+    title,
+    severity,
+    assign,
+    ...(values.description ? { description: values.description } : {}),
+    ...(priority ? { priority } : {}),
+    ...(urgency ? { urgency } : {}),
+    ...(values.service?.length ? { services: values.service } : {}),
+    ...(Object.keys(labels).length > 0 ? { labels } : {}),
+    ...(values.major ? { declare_major: true } : {}),
+  };
+}

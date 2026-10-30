@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { loginCommand, logoutCommand, profilesCommand, statusCommand, useCommand, whoamiCommand } from './account.js';
+import { alertsCommand } from './alerts.js';
 import { annotateCommand } from './annotate.js';
 import { approvalsCommand } from './approvals.js';
 import { sourceMapsCommand, symbolsCommand } from './artifacts.js';
@@ -42,6 +43,7 @@ const COMMANDS: Command[] = [
   servicesCommand,
   searchJobsCommand,
   incidentsCommand,
+  alertsCommand,
   oncallCommand,
   approvalsCommand,
   annotateCommand,

@@ -47,11 +47,25 @@ molesignal search-jobs submit "SELECT * FROM app_logs WHERE level = 'error'" --s
 molesignal incidents                          # 进行中的事件
 molesignal incidents show <事件> --rca
 molesignal incidents ack <事件>
+molesignal incidents create --title "欧洲卡支付失败" --severity critical --priority P1
 molesignal oncall
 molesignal approvals                          # 等待中或已批准的审批请求
 molesignal annotate "Release 2.4.0" --tags release --yes
 molesignal synthetics run "Checkout API" --wait --yes
 ```
+
+## 告警配置存成文件
+
+```bash
+molesignal alerts rules export -o rules.json  # 全部规则，升级策略和子规则按名称引用
+molesignal alerts rules apply -f rules.json --dry-run
+molesignal alerts rules apply -f prometheus-rules.yaml
+molesignal alerts schedules export -o schedules.json
+molesignal alerts policies export -o policies.json
+molesignal alerts routing export -o routing.json
+```
+
+`alerts rules apply` 接受 MoleSignal 导出的规则包，或 Prometheus 的告警规则文件（也认 `PrometheusRule`）。`policies`、`schedules`、`routing` 接受升级策略、排班和路由规则的包：用户按邮箱，升级策略、排班、团队和节假日日历按名称引用。每一项按名称对上；整个文件先预演，没有出错才写进去，有出错时命令以 1 退出，可以放进 CI。先导入排班，再导入通知它们的升级策略，最后是引用升级策略的规则和路由规则。
 
 变更与 Mole Agent 一样经过组织的 Tool Policy：立即执行、需要确认（`--yes` 预先确认），或等待审批人（命令以 3 退出；`--wait` 等待审批）。
 
