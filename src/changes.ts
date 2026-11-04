@@ -57,11 +57,11 @@ export interface Approval {
   reason?: string | undefined;
   impact?: string | undefined;
   risk?: string | undefined;
-  required_approvals?: number | undefined;
+  requiredApprovals?: number | undefined;
   reviews?: unknown;
-  requested_by?: string | undefined;
-  expires_at?: number | null | undefined;
-  created_at?: number | undefined;
+  requestedBy?: string | undefined;
+  expiresAt?: number | null | undefined;
+  createdAt?: number | undefined;
 }
 
 /** How an approved change ran. */
@@ -70,7 +70,7 @@ export interface Execution {
   /** What the change was made to, such as the id of a search job it submitted. */
   target?: string | undefined;
   status?: string | undefined;
-  output_summary?: string | null | undefined;
+  outputSummary?: string | null | undefined;
   error?: string | null | undefined;
   verification?: unknown;
 }
@@ -107,7 +107,7 @@ export function approvalOf(value: unknown): Approval | undefined {
 
 /** The execution in a result that says a change ran. */
 function executionOf(value: unknown): Execution | undefined {
-  if (!isObject(value) || typeof value.operation_id !== 'string') return undefined;
+  if (!isObject(value) || typeof value.operationId !== 'string') return undefined;
   const execution = isObject(value.execution) ? (value.execution as Execution) : {};
   return { ...execution, status: execution.status ?? (typeof value.status === 'string' ? value.status : undefined) };
 }
@@ -115,7 +115,7 @@ function executionOf(value: unknown): Execution | undefined {
 /** Throws when the change ran and failed. */
 function checked(execution: Execution): Execution {
   if (execution.status === 'failed') {
-    throw new Error(`MoleSignal could not carry out the change: ${execution.error ?? execution.output_summary ?? 'it failed'}`);
+    throw new Error(`MoleSignal could not carry out the change: ${execution.error ?? execution.outputSummary ?? 'it failed'}`);
   }
   return execution;
 }
@@ -128,7 +128,7 @@ function sleep(ms: number): Promise<void> {
 async function execute(session: ToolSession, approval: Approval, options: ChangeOptions): Promise<ChangeOutcome> {
   let result: unknown;
   try {
-    result = await session.call('execute_agent_approval', { approval_id: approval.id, idempotency_key: randomUUID() });
+    result = await session.call('execute_agent_approval', { approvalId: approval.id, idempotencyKey: randomUUID() });
   } catch (error) {
     const message = (error as Error).message;
     if (/declined or cancelled/i.test(message)) {
@@ -148,7 +148,7 @@ async function execute(session: ToolSession, approval: Approval, options: Change
 async function executionFor(session: ToolSession, approvalId: string): Promise<Execution> {
   const executions = await session.call('list_agent_executions', { limit: 100 });
   const found = Array.isArray(executions)
-    ? executions.find((execution) => isObject(execution) && execution.approval_request_id === approvalId)
+    ? executions.find((execution) => isObject(execution) && execution.approvalRequestId === approvalId)
     : undefined;
   return (found as Execution | undefined) ?? { status: 'succeeded' };
 }
@@ -172,7 +172,7 @@ export async function followApproval(session: ToolSession, approval: Approval, o
     if (!options.wait) return { state: 'pending', approval: current };
 
     if (!told) {
-      const reviewers = current.required_approvals ?? 1;
+      const reviewers = current.requiredApprovals ?? 1;
       options.say(`Waiting for ${reviewers} approval${reviewers === 1 ? '' : 's'} of ${current.id} at ${options.approvalsPage}`);
       told = true;
     }
@@ -180,7 +180,7 @@ export async function followApproval(session: ToolSession, approval: Approval, o
       throw new Error(`No decision on approval ${current.id} within ${formatDuration(options.wait)}; nothing was changed yet`);
     }
     await sleep(Math.min(options.interval ?? 5000, Math.max(0, deadline - Date.now())));
-    current = approvalOf(await session.call('get_agent_approval', { approval_id: current.id })) ?? current;
+    current = approvalOf(await session.call('get_agent_approval', { approvalId: current.id })) ?? current;
   }
 }
 
@@ -199,7 +199,7 @@ export async function makeChange(
 
   const execution = executionOf(result);
   if (execution) {
-    const approvalId = isObject(result) && typeof result.approval_id === 'string' ? result.approval_id : undefined;
+    const approvalId = isObject(result) && typeof result.approvalId === 'string' ? result.approvalId : undefined;
     return { state: 'done', approvalId, execution: checked(execution) };
   }
 
@@ -214,12 +214,12 @@ export async function makeChange(
  */
 export function reportChange(outcome: ChangeOutcome, done: string, options: { approvalsPage: string; say: (line: string) => void }): number {
   if (outcome.state === 'done') {
-    const summary = outcome.execution.output_summary;
+    const summary = outcome.execution.outputSummary;
     options.say(summary ? `${done}: ${summary}` : done);
     return 0;
   }
   const { approval } = outcome;
-  const reviewers = approval.required_approvals ?? 1;
+  const reviewers = approval.requiredApprovals ?? 1;
   options.say(
     `Waiting for ${reviewers} approval${reviewers === 1 ? '' : 's'}: approval ${approval.id} at ${options.approvalsPage}. ` +
       `Once approved, run \`molesignal approvals execute ${approval.id}\`, or add --wait next time.`,

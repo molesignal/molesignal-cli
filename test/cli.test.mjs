@@ -70,7 +70,7 @@ test('profiles are listed, chosen, signed out of and removed', async () => {
     current: 'default',
     profiles: {
       default: { url: 'https://prod.example.com', oauth: { tokens: { access_token: 'a', token_type: 'Bearer' } } },
-      staging: { url: 'https://staging.example.com', token: 'ms_token' },
+      staging: { url: 'https://staging.example.com', token: 'mspat-token' },
     },
   };
   const listed = await cli(['profiles'], { config });
@@ -109,7 +109,7 @@ test('deploy records what CI tells, and runs the deploy command to say how it we
     status: 'succeeded',
     commit: '9f2c1e7a4b3d',
     repository: 'https://github.com/acme/checkout',
-    ci_url: 'https://github.com/acme/checkout/actions/runs/7',
+    ciUrl: 'https://github.com/acme/checkout/actions/runs/7',
   });
 
   const api = await fakeApi({ 'POST /api/v1/apm/deployments': async () => [201, { id: 'd1' }] });

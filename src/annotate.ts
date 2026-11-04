@@ -59,12 +59,12 @@ Example:
           'create_annotation',
           {
             title,
-            time_start_micros: start,
-            time_end_micros: end,
+            timeStart: start,
+            timeEnd: end,
             ...(values.description ? { description: values.description } : {}),
             ...(tags.length ? { tags } : {}),
-            ...(values.dashboard ? { dashboard_id: values.dashboard } : {}),
-            ...(values.stream ? { stream_name: values.stream } : {}),
+            ...(values.dashboard ? { dashboardId: values.dashboard } : {}),
+            ...(values.stream ? { streamName: values.stream } : {}),
           },
           options,
         );

@@ -8,17 +8,17 @@ import { openInBrowser, pageOf } from './web.js';
 /** An incident as MoleSignal keeps it. */
 export interface Incident {
   id: string;
-  rule_id?: string | undefined;
+  ruleId?: string | undefined;
   status?: string | undefined;
   severity?: string | undefined;
   summary?: string | undefined;
   labels?: Record<string, string> | undefined;
   annotations?: Record<string, string> | undefined;
-  affected_services?: string[] | undefined;
-  trace_ids?: string[] | undefined;
-  created_at?: number | undefined;
-  acknowledged_at?: number | null | undefined;
-  resolved_at?: number | null | undefined;
+  affectedServices?: string[] | undefined;
+  traceIds?: string[] | undefined;
+  createdAt?: number | undefined;
+  acknowledgedAt?: number | null | undefined;
+  resolvedAt?: number | null | undefined;
 }
 
 /** The incidents of a `list_incidents` result. */
@@ -34,8 +34,8 @@ export function formatIncidents(incidents: Incident[], options: { color?: boolea
     incident.id,
     paint(color, stateColor(incident.status ?? ''), incident.status ?? ''),
     paint(color, incident.severity === 'critical' ? '31' : incident.severity === 'warning' ? '33' : undefined, incident.severity ?? ''),
-    incident.created_at ? ago(incident.created_at, options.now) : '',
-    (incident.affected_services ?? []).join(', '),
+    incident.createdAt ? ago(incident.createdAt, options.now) : '',
+    (incident.affectedServices ?? []).join(', '),
     incident.summary ?? '',
   ]);
   return table(['INCIDENT', 'STATUS', 'SEVERITY', 'OPENED', 'SERVICES', 'SUMMARY'], rows, options);
@@ -52,14 +52,14 @@ export function formatIncident(incident: Incident, rule: Record<string, unknown>
   const field = (name: string, value: string | undefined) => {
     if (value) lines.push(labelled(name, value, 14));
   };
-  field('Rule', typeof rule?.name === 'string' ? `${rule.name} (${incident.rule_id})` : incident.rule_id);
-  field('Opened', incident.created_at ? minute(incident.created_at) : undefined);
-  field('Acknowledged', incident.acknowledged_at ? minute(incident.acknowledged_at) : undefined);
-  field('Resolved', incident.resolved_at ? minute(incident.resolved_at) : undefined);
-  field('Services', incident.affected_services?.join(', '));
+  field('Rule', typeof rule?.name === 'string' ? `${rule.name} (${incident.ruleId})` : incident.ruleId);
+  field('Opened', incident.createdAt ? minute(incident.createdAt) : undefined);
+  field('Acknowledged', incident.acknowledgedAt ? minute(incident.acknowledgedAt) : undefined);
+  field('Resolved', incident.resolvedAt ? minute(incident.resolvedAt) : undefined);
+  field('Services', incident.affectedServices?.join(', '));
   field('Labels', Object.entries(incident.labels ?? {}).map(([key, value]) => `${key}=${value}`).join(' '));
   for (const [key, value] of Object.entries(incident.annotations ?? {})) field(key, value);
-  field('Traces', incident.trace_ids?.slice(0, 5).join(' '));
+  field('Traces', incident.traceIds?.slice(0, 5).join(' '));
   return lines;
 }
 
@@ -144,8 +144,8 @@ export const incidentsCommand: Command = {
         return;
       }
       const { found, rca } = await withSession(values, async (session) => ({
-        found: (await session.call('get_incident', { incident_id: id })) as { incident?: Incident; rule?: Record<string, unknown> },
-        rca: values.rca ? ((await session.read('get_incident_rca', { incident_id: id })) as { rca?: { summary?: string } | null }) : undefined,
+        found: (await session.call('get_incident', { incidentId: id })) as { incident?: Incident; rule?: Record<string, unknown> },
+        rca: values.rca ? ((await session.read('get_incident_rca', { incidentId: id })) as { rca?: { summary?: string } | null }) : undefined,
       }));
       if (values.json) {
         printJson(rca ? { ...found, rca: rca.rca } : found);
@@ -170,7 +170,7 @@ export const incidentsCommand: Command = {
               ? `Incident ${id} is marked acknowledged; its escalation stops while it stays open`
               : `Incident ${id} is marked resolved`,
           });
-          const outcome = await makeChange(session, acknowledge ? 'acknowledge_incident' : 'resolve_incident', { incident_id: id }, options);
+          const outcome = await makeChange(session, acknowledge ? 'acknowledge_incident' : 'resolve_incident', { incidentId: id }, options);
           return reportChange(outcome, `${acknowledge ? 'Acknowledged' : 'Resolved'} incident ${id}`, options);
         },
         confirmations(values),
@@ -204,7 +204,7 @@ export const incidentsCommand: Command = {
         await session.read('list_incidents', {
           status,
           limit,
-          ...(values.since ? { time_range: timeWindow(values, values.since) } : {}),
+          ...(values.since ? { timeRange: timeWindow(values, values.since) } : {}),
         }),
       ),
     );
@@ -255,11 +255,11 @@ export function createInput(values: {
   }
 
   const assign = values.team
-    ? { kind: 'team', team_id: values.team }
+    ? { kind: 'team', teamId: values.team }
     : values.policy
-      ? { kind: 'policy', escalation_policy_id: values.policy }
+      ? { kind: 'policy', escalationPolicyId: values.policy }
       : values.user?.length
-        ? { kind: 'users', user_ids: values.user }
+        ? { kind: 'users', userIds: values.user }
         : { kind: 'auto' };
 
   return {
@@ -271,6 +271,6 @@ export function createInput(values: {
     ...(urgency ? { urgency } : {}),
     ...(values.service?.length ? { services: values.service } : {}),
     ...(Object.keys(labels).length > 0 ? { labels } : {}),
-    ...(values.major ? { declare_major: true } : {}),
+    ...(values.major ? { declareMajor: true } : {}),
   };
 }

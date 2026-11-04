@@ -143,12 +143,12 @@ export class LogFollower {
   }
 
   /** Where the next read starts and ends, in microseconds. */
-  range(now: number): { start_micros: number; end_micros: number } {
+  range(now: number): { startTime: number; endTime: number } {
     const start = this.draining ? this.edge : Math.max(this.floor, this.edge - this.overlap);
     for (const [key, time] of this.seen) {
       if (time < start) this.seen.delete(key);
     }
-    return { start_micros: start, end_micros: Math.max(now, start) };
+    return { startTime: start, endTime: Math.max(now, start) };
   }
 
   /** Takes a read (oldest first) that ended at `end` and returns the logs not printed yet. */
@@ -213,7 +213,7 @@ export async function readLogs(tools: LogTools, options: LogsOptions, io: LogsIo
     await tools.call('query_logs', {
       stream: options.stream,
       sql: logsSql(options.stream, options.where, 'newest', options.lines, options.fields),
-      time_range: { start_micros: start, end_micros: end },
+      timeRange: { startTime: start, endTime: end },
       limit: options.lines,
     }),
   );
@@ -236,7 +236,7 @@ export async function readLogs(tools: LogTools, options: LogsOptions, io: LogsIo
       result = await tools.call('query_logs', {
         stream: options.stream,
         sql: logsSql(options.stream, options.where, 'oldest', batch, options.fields),
-        time_range: range,
+        timeRange: range,
         limit: batch,
       });
     } catch (error) {
@@ -258,7 +258,7 @@ export async function readLogs(tools: LogTools, options: LogsOptions, io: LogsIo
     backoff = 0;
 
     const rows = rowsOf(result);
-    for (const row of follower.take(rows, range.end_micros, rows.length >= batch)) io.write(row);
+    for (const row of follower.take(rows, range.endTime, rows.length >= batch)) io.write(row);
   }
 }
 
@@ -271,10 +271,10 @@ export async function readAround(
     name: 'search_around',
     arguments: {
       stream: options.stream,
-      anchor_micros: options.at,
+      anchorTime: options.at,
       before: options.before,
       after: options.after,
-      ...(options.where?.trim() ? { filter_sql: options.where.trim() } : {}),
+      ...(options.where?.trim() ? { filterSql: options.where.trim() } : {}),
     },
   });
   const rows = (key: 'before' | 'after') =>

@@ -20,7 +20,7 @@ export function approvalsOf(result: unknown): Approval[] {
 /** How many reviews an approval has of those it needs: `1/2`. */
 function reviewsOf(approval: Approval): string {
   const given = Array.isArray(approval.reviews) ? approval.reviews.length : 0;
-  return approval.required_approvals ? `${given}/${approval.required_approvals}` : 'confirm';
+  return approval.requiredApprovals ? `${given}/${approval.requiredApprovals}` : 'confirm';
 }
 
 /** Approvals as a table: id, status, action, target, reviews, age and reason. */
@@ -32,7 +32,7 @@ export function formatApprovals(approvals: Approval[], options: { color?: boolea
     approval.action ?? '',
     approval.target ?? '',
     reviewsOf(approval),
-    approval.created_at ? ago(approval.created_at, options.now) : '',
+    approval.createdAt ? ago(approval.createdAt, options.now) : '',
     approval.reason ?? '',
   ]);
   return table(['APPROVAL', 'STATUS', 'ACTION', 'TARGET', 'REVIEWS', 'ASKED', 'REASON'], rows, options);
@@ -75,7 +75,7 @@ export const approvalsCommand: Command = {
 
     if (action === 'show') {
       const id = onePositional('approvals', rest, 'approval');
-      const approval = await withSession(values, (session) => session.call('get_agent_approval', { approval_id: id }));
+      const approval = await withSession(values, (session) => session.call('get_agent_approval', { approvalId: id }));
       if (values.json) {
         printJson(approval);
         return;
@@ -91,8 +91,8 @@ export const approvalsCommand: Command = {
       field('Reason', found.reason);
       field('Impact', found.impact);
       field('Reviews', reviewsOf(found));
-      field('Asked', found.created_at ? minute(found.created_at) : undefined);
-      field('Expires', typeof found.expires_at === 'number' ? minute(found.expires_at) : undefined);
+      field('Asked', found.createdAt ? minute(found.createdAt) : undefined);
+      field('Expires', typeof found.expiresAt === 'number' ? minute(found.expiresAt) : undefined);
       print(lines);
       return;
     }
@@ -103,7 +103,7 @@ export const approvalsCommand: Command = {
         values,
         async (session, signed) => {
           const options = changeOptions(values, signed.credentials.connection.url, { reason: '', impact: '' });
-          const approval = approvalOf(await session.call('get_agent_approval', { approval_id: id }));
+          const approval = approvalOf(await session.call('get_agent_approval', { approvalId: id }));
           if (!approval) throw new Error(`No approval ${id}`);
           const outcome = await followApproval(session, approval, options);
           return reportChange(outcome, `Carried out approval ${id}`, options);

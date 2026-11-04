@@ -57,7 +57,7 @@ test('a follow prints each log once, reading a little back for late ones', () =>
   assert.deepEqual(first.map((it) => it.message), ['b', 'c']);
 
   // The next read starts 10 s before the end of the first.
-  assert.deepEqual(follower.range(210 * SECOND), { start_micros: 190 * SECOND, end_micros: 210 * SECOND });
+  assert.deepEqual(follower.range(210 * SECOND), { startTime: 190 * SECOND, endTime: 210 * SECOND });
 
   // What it printed already comes back and is skipped; a late log inside the overlap is printed.
   const next = follower.take([row(190, 'c'), row(195, 'late'), row(205, 'd')], 210 * SECOND, false);
@@ -79,15 +79,15 @@ test('a full read is read on from its last log at once', () => {
 
   follower.take([row(101, 'a'), row(102, 'b')], 300 * SECOND, true);
   assert.equal(follower.catchingUp, true);
-  assert.deepEqual(follower.range(300 * SECOND).start_micros, 102 * SECOND);
+  assert.deepEqual(follower.range(300 * SECOND).startTime, 102 * SECOND);
 
   // A full read of nothing new moves past its time instead of coming back the same.
   follower.take([row(102, 'b'), row(102, 'b')], 300 * SECOND, true);
-  assert.equal(follower.range(300 * SECOND).start_micros, 102 * SECOND + 1);
+  assert.equal(follower.range(300 * SECOND).startTime, 102 * SECOND + 1);
 
   follower.take([row(150, 'c')], 300 * SECOND, false);
   assert.equal(follower.catchingUp, false);
-  assert.equal(follower.range(310 * SECOND).start_micros, 290 * SECOND);
+  assert.equal(follower.range(310 * SECOND).startTime, 290 * SECOND);
 });
 
 /** Tools that answer reads from a script, and record what they were asked. */
@@ -124,7 +124,7 @@ test('without following, the newest logs print oldest first', async () => {
   assert.deepEqual(printed, ['two', 'three']);
   assert.equal(tools.asked.length, 1);
   assert.equal(tools.asked[0].args.sql, `SELECT * FROM "app_logs" WHERE (level = 'error') ORDER BY _timestamp DESC LIMIT 2`);
-  assert.deepEqual(tools.asked[0].args.time_range, { start_micros: 40 * SECOND, end_micros: 100 * SECOND });
+  assert.deepEqual(tools.asked[0].args.timeRange, { startTime: 40 * SECOND, endTime: 100 * SECOND });
 });
 
 test('a follow prints what arrives, survives a lost connection and stops when asked', async () => {
@@ -183,8 +183,8 @@ test('an answer too large is read again in smaller batches; a refusal ends the f
 test('streams are listed as aligned columns', () => {
   assert.deepEqual(
     formatStreams([
-      { name: 'app_logs', field_count: 12, retention: { days: 30 }, description: 'Demo logs' },
-      { name: 'k8s', field_count: 140, retention: null, description: null },
+      { name: 'app_logs', fieldCount: 12, retention: { days: 30 }, description: 'Demo logs' },
+      { name: 'k8s', fieldCount: 140, retention: null, description: null },
     ]),
     [
       'STREAM    FIELDS  RETENTION  DESCRIPTION',

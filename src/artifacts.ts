@@ -164,13 +164,13 @@ export async function uploadArtifact(api: Api, build: BuildIdentity, artifact: A
   await apiRequest(api, 'POST', '/debug-artifacts', {
     raw: multipartForm(
       {
-        application_id: build.application,
+        applicationId: build.application,
         service: build.service,
         release: build.release,
         kind: artifact.kind,
         platform: artifact.platform,
         architecture: artifact.architecture,
-        debug_id: artifact.debugId,
+        debugId: artifact.debugId,
       },
       { name: artifact.filename, bytes },
     ),
@@ -210,8 +210,8 @@ interface StoredArtifact {
   release?: string;
   service?: string;
   filename?: string;
-  size_bytes?: number;
-  uploaded_at_micros?: number;
+  sizeBytes?: number;
+  uploadedAt?: number;
 }
 
 /** The shared part of `source-maps` and `symbols`: upload, list and delete. */
@@ -287,7 +287,7 @@ function artifactCommand(options: {
         const api = await apiAccess(values);
         const kind = values.kind ?? (options.kinds.length === 1 ? options.kinds[0] : undefined);
         const found = (await apiRequest(api, 'GET', '/debug-artifacts', {
-          query: { application_id: values.application, service: values.service, kind, platform: values.platform },
+          query: { applicationId: values.application, service: values.service, kind, platform: values.platform },
         })) as StoredArtifact[];
         const listed = (found ?? []).filter(
           (artifact) => options.kinds.includes(artifact.kind ?? '') && (!values.release || artifact.release === values.release),
@@ -300,8 +300,8 @@ function artifactCommand(options: {
             artifact.service ?? '',
             artifact.release ?? '',
             [artifact.platform, artifact.architecture].filter(Boolean).join(' '),
-            artifact.size_bytes === undefined ? '' : formatBytes(artifact.size_bytes),
-            artifact.uploaded_at_micros ? minute(artifact.uploaded_at_micros) : '',
+            artifact.sizeBytes === undefined ? '' : formatBytes(artifact.sizeBytes),
+            artifact.uploadedAt ? minute(artifact.uploadedAt) : '',
             artifact.filename ?? '',
           ]);
           print(table(['ID', 'SERVICE', 'RELEASE', 'PLATFORM', 'SIZE', 'UPLOADED', 'FILE'], rows, { width: terminalWidth() }));

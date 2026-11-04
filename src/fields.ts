@@ -7,9 +7,9 @@ import { timeWindow } from './time.js';
 /** A field as a stream's schema describes it. */
 export interface FieldInfo {
   name: string;
-  data_type?: string | undefined;
+  dataType?: string | undefined;
   nullable?: boolean | undefined;
-  index_type?: string | null | undefined;
+  indexType?: string | null | undefined;
   indexed?: boolean | undefined;
 }
 
@@ -24,8 +24,8 @@ export function fieldsOf(result: unknown): FieldInfo[] {
 
 /** How a field is indexed, in a word: its index type, `yes` from an older schema, or nothing. */
 function indexOf(field: FieldInfo): string {
-  if (field.index_type && field.index_type !== 'none') return field.index_type;
-  return field.index_type === undefined && field.indexed ? 'yes' : '';
+  if (field.indexType && field.indexType !== 'none') return field.indexType;
+  return field.indexType === undefined && field.indexed ? 'yes' : '';
 }
 
 /** The values of a `search_field_values` result, most common first. */
@@ -89,12 +89,12 @@ Examples:
 
     if (!field) {
       const fields = await withSession(values, async (session) =>
-        fieldsOf(await session.call('get_stream_schema', { stream, stream_type: type })),
+        fieldsOf(await session.call('get_stream_schema', { stream, streamType: type })),
       );
       if (values.json) printJsonLines(fields);
       else if (fields.length === 0) say(`${stream} has no fields yet`);
       else {
-        const rows = fields.map((info) => [info.name, info.data_type ?? '', indexOf(info)]);
+        const rows = fields.map((info) => [info.name, info.dataType ?? '', indexOf(info)]);
         print(table(['FIELD', 'TYPE', 'INDEX'], rows, { width: terminalWidth() }));
       }
       return;
@@ -107,8 +107,8 @@ Examples:
         await session.read('search_field_values', {
           stream,
           field,
-          stream_type: type,
-          time_range: window,
+          streamType: type,
+          timeRange: window,
           limit,
           ...(values.match ? { query: values.match } : {}),
         }),

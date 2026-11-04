@@ -45,7 +45,7 @@ async function streamNames(): Promise<string[]> {
   const names = await Promise.race([
     withSession({}, async (session) => {
       const lists = await Promise.all(
-        ['logs', 'traces', 'metrics'].map(async (type) => streamsOf(await session.call('list_streams', { stream_type: type, limit: 1000 }))),
+        ['logs', 'traces', 'metrics'].map(async (type) => streamsOf(await session.call('list_streams', { streamType: type, limit: 1000 }))),
       );
       return [...new Set(lists.flat().map((stream) => stream.name))].sort();
     }),

@@ -6,12 +6,12 @@ import { openInBrowser, pageOf } from './web.js';
 
 /** The rate, errors and latency of requests, as APM sums them up. */
 export interface Red {
-  request_count?: number | undefined;
-  error_count?: number | undefined;
-  error_rate?: number | undefined;
-  p50_micros?: number | null | undefined;
-  p95_micros?: number | null | undefined;
-  p99_micros?: number | null | undefined;
+  requestCount?: number | undefined;
+  errorCount?: number | undefined;
+  errorRate?: number | undefined;
+  p50Time?: number | null | undefined;
+  p95Time?: number | null | undefined;
+  p99Time?: number | null | undefined;
   apdex?: number | null | undefined;
 }
 
@@ -26,7 +26,7 @@ export interface ServiceSummary {
   service: Identity;
   red?: Red | undefined;
   health?: string | undefined;
-  current_version?: string | null | undefined;
+  currentVersion?: string | null | undefined;
 }
 
 const micros = (value: number | null | undefined) => (typeof value === 'number' ? formatDuration(value / 1000) : '');
@@ -51,11 +51,11 @@ export function formatServices(services: ServiceSummary[], options: { color?: bo
   const rows = services.map((summary) => [
     serviceName(summary.service),
     summary.service.environment ?? '',
-    count(summary.red?.request_count),
-    rate(summary.red?.error_rate),
-    micros(summary.red?.p95_micros),
+    count(summary.red?.requestCount),
+    rate(summary.red?.errorRate),
+    micros(summary.red?.p95Time),
     paint(color, stateColor(summary.health ?? ''), (summary.health ?? '').replace('_', ' ')),
-    summary.current_version ?? '',
+    summary.currentVersion ?? '',
   ]);
   return table(['SERVICE', 'ENV', 'REQUESTS', 'ERRORS', 'P95', 'HEALTH', 'VERSION'], rows, options);
 }
@@ -67,12 +67,12 @@ export function formatComparison(result: Record<string, unknown>, options: { col
   const candidate = side('candidate');
   const rows = [baseline, candidate].map((one) => [
     one.version ?? '',
-    count(one.red?.request_count),
-    rate(one.red?.error_rate),
-    micros(one.red?.p95_micros),
+    count(one.red?.requestCount),
+    rate(one.red?.errorRate),
+    micros(one.red?.p95Time),
   ]);
   const status = String(result.status ?? '');
-  const regressed = Array.isArray(result.regressed_transactions) ? result.regressed_transactions.length : 0;
+  const regressed = Array.isArray(result.regressedTransactions) ? result.regressedTransactions.length : 0;
   return [
     ...table(['VERSION', 'REQUESTS', 'ERRORS', 'P95'], rows),
     '',
@@ -107,7 +107,7 @@ Examples:
   molesignal services --env production --sort errors
   molesignal services compare checkout 2.3.9 2.4.0 --since 2h --fail-on-regression`;
 
-const SORTS: Record<string, string> = { requests: 'request_count', errors: 'error_rate', p95: 'p95_micros', name: 'name' };
+const SORTS: Record<string, string> = { requests: 'request_count', errors: 'error_rate', p95: 'p95_time', name: 'name' };
 
 export const servicesCommand: Command = {
   name: 'services',
@@ -131,7 +131,7 @@ export const servicesCommand: Command = {
     });
     const [action, ...rest] = positionals;
     const scope = {
-      time_range: timeWindow(values, '1h'),
+      timeRange: timeWindow(values, '1h'),
       ...(values.env ? { environment: values.env } : {}),
       ...(values.namespace ? { namespace: values.namespace } : {}),
     };
@@ -160,9 +160,9 @@ export const servicesCommand: Command = {
       const red = (detail.red ?? summary.red ?? {}) as Red;
       print([
         `${serviceName(summary.service)}${summary.service?.environment ? ` (${summary.service.environment})` : ''}` +
-          `${summary.current_version ? ` · version ${summary.current_version}` : ''}` +
+          `${summary.currentVersion ? ` · version ${summary.currentVersion}` : ''}` +
           `${summary.health ? ` · ${paint(color, stateColor(summary.health), summary.health.replace('_', ' '))}` : ''}`,
-        `requests ${count(red.request_count)} · errors ${rate(red.error_rate)} · p50 ${micros(red.p50_micros)} · p95 ${micros(red.p95_micros)} · p99 ${micros(red.p99_micros)}`,
+        `requests ${count(red.requestCount)} · errors ${rate(red.errorRate)} · p50 ${micros(red.p50Time)} · p95 ${micros(red.p95Time)} · p99 ${micros(red.p99Time)}`,
       ]);
       const section = (title: string, head: string[], rows: string[][]) => {
         if (rows.length === 0) return;
@@ -174,7 +174,7 @@ export const servicesCommand: Command = {
         ['REQUESTS', 'ERRORS', 'P95', 'ENDPOINT'],
         list('transactions').map((item) => {
           const itemRed = (item.red ?? {}) as Red;
-          return [count(itemRed.request_count), rate(itemRed.error_rate), micros(itemRed.p95_micros), String((item.transaction as { name?: string })?.name ?? '')];
+          return [count(itemRed.requestCount), rate(itemRed.errorRate), micros(itemRed.p95Time), String((item.transaction as { name?: string })?.name ?? '')];
         }),
       );
       section(
@@ -183,16 +183,16 @@ export const servicesCommand: Command = {
         list('dependencies').map((item) => {
           const itemRed = (item.red ?? {}) as Red;
           const dependency = (item.dependency ?? {}) as { category?: string; target?: string };
-          return [count(itemRed.request_count), rate(itemRed.error_rate), micros(itemRed.p95_micros), `${dependency.category ?? ''} ${dependency.target ?? ''}`.trim()];
+          return [count(itemRed.requestCount), rate(itemRed.errorRate), micros(itemRed.p95Time), `${dependency.category ?? ''} ${dependency.target ?? ''}`.trim()];
         }),
       );
       section(
         'Errors',
         ['COUNT', 'TYPE', 'MESSAGE'],
         list('errors').map((item) => [
-          count(Number(item.occurrence_count ?? 0)),
-          String((item.error as { error_type?: string })?.error_type ?? ''),
-          String(item.representative_message ?? ''),
+          count(Number(item.occurrenceCount ?? 0)),
+          String((item.error as { errorType?: string })?.errorType ?? ''),
+          String(item.representativeMessage ?? ''),
         ]),
       );
       section(
@@ -200,7 +200,7 @@ export const servicesCommand: Command = {
         ['VERSION', 'REQUESTS', 'ERRORS', 'P95'],
         list('versions').map((item) => {
           const itemRed = (item.red ?? {}) as Red;
-          return [String(item.version ?? ''), count(itemRed.request_count), rate(itemRed.error_rate), micros(itemRed.p95_micros)];
+          return [String(item.version ?? ''), count(itemRed.requestCount), rate(itemRed.errorRate), micros(itemRed.p95Time)];
         }),
       );
       return;
@@ -212,7 +212,7 @@ export const servicesCommand: Command = {
         throw new UsageError('Run `molesignal services compare <service> <baseline-version> <candidate-version>`');
       }
       const result = (await withSession(values, (session) =>
-        session.read('compare_apm_versions', { ...scope, service, baseline_version: baseline, candidate_version: candidate }),
+        session.read('compare_apm_versions', { ...scope, service, baselineVersion: baseline, candidateVersion: candidate }),
       )) as Record<string, unknown>;
       if (values.json) printJson(result);
       else print(formatComparison(result, { color }));

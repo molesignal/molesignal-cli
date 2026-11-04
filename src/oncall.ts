@@ -5,14 +5,14 @@ import { minute, parseTime } from './time.js';
 
 /** Who is on call for one schedule, as `get_current_on_call` says it. */
 export interface OnCall {
-  schedule_id?: string | undefined;
-  schedule_name?: string | undefined;
-  user?: { id?: string | undefined; display_name?: string | null | undefined } | null | undefined;
+  scheduleId?: string | undefined;
+  scheduleName?: string | undefined;
+  user?: { id?: string | undefined; displayName?: string | null | undefined } | null | undefined;
 }
 
 /** The people on call of a `get_current_on_call` result. */
 export function onCallOf(result: unknown): OnCall[] {
-  const rows = result && typeof result === 'object' && 'on_call' in result ? (result.on_call as unknown) : undefined;
+  const rows = result && typeof result === 'object' && 'onCall' in result ? (result.onCall as unknown) : undefined;
   return Array.isArray(rows) ? (rows as OnCall[]) : [];
 }
 
@@ -42,8 +42,8 @@ ${CONNECTION_HELP}`,
     const at = values.at ? parseTime(values.at) : undefined;
     const result = await withSession(values, (session) =>
       session.read('get_current_on_call', {
-        ...(values.schedule ? { schedule_id: values.schedule } : {}),
-        ...(at !== undefined ? { at_micros: at } : {}),
+        ...(values.schedule ? { scheduleId: values.schedule } : {}),
+        ...(at !== undefined ? { atTime: at } : {}),
       }),
     );
     if (values.json) {
@@ -59,7 +59,7 @@ ${CONNECTION_HELP}`,
     print(
       table(
         ['SCHEDULE', 'ON CALL', 'SCHEDULE ID'],
-        rows.map((row) => [row.schedule_name ?? '', row.user?.display_name ?? row.user?.id ?? '', row.schedule_id ?? '']),
+        rows.map((row) => [row.scheduleName ?? '', row.user?.displayName ?? row.user?.id ?? '', row.scheduleId ?? '']),
         { width: terminalWidth() },
       ),
     );

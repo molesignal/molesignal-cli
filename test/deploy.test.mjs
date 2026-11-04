@@ -18,9 +18,9 @@ test('GitHub Actions tells the commit, repository, pull request, author and run'
       provider: 'GitHub Actions',
       commit: '9f2c1e7a4b3d',
       repository: 'https://github.com/acme/checkout',
-      pull_request: 'https://github.com/acme/checkout/pull/42',
+      pullRequest: 'https://github.com/acme/checkout/pull/42',
       author: 'octocat',
-      ci_url: 'https://github.com/acme/checkout/actions/runs/7',
+      ciUrl: 'https://github.com/acme/checkout/actions/runs/7',
     },
   );
 });
@@ -35,17 +35,17 @@ test('GitLab, Jenkins, CircleCI, Bitbucket and Azure each tell theirs', () => {
     CI_JOB_URL: 'https://gitlab.com/acme/checkout/-/jobs/9',
     CI_ENVIRONMENT_NAME: 'production',
   });
-  assert.equal(gitlab.pull_request, 'https://gitlab.com/acme/checkout/-/merge_requests/5');
+  assert.equal(gitlab.pullRequest, 'https://gitlab.com/acme/checkout/-/merge_requests/5');
   assert.equal(gitlab.environment, 'production');
 
-  assert.equal(ciFacts({ JENKINS_URL: 'https://ci', GIT_COMMIT: 'def', BUILD_URL: 'https://ci/job/1/' }).ci_url, 'https://ci/job/1/');
+  assert.equal(ciFacts({ JENKINS_URL: 'https://ci', GIT_COMMIT: 'def', BUILD_URL: 'https://ci/job/1/' }).ciUrl, 'https://ci/job/1/');
   assert.equal(ciFacts({ CIRCLECI: 'true', CIRCLE_SHA1: 'c1' }).commit, 'c1');
   assert.equal(
-    ciFacts({ BITBUCKET_BUILD_NUMBER: '3', BITBUCKET_GIT_HTTP_ORIGIN: 'https://bitbucket.org/acme/app', BITBUCKET_PR_ID: '8' }).pull_request,
+    ciFacts({ BITBUCKET_BUILD_NUMBER: '3', BITBUCKET_GIT_HTTP_ORIGIN: 'https://bitbucket.org/acme/app', BITBUCKET_PR_ID: '8' }).pullRequest,
     'https://bitbucket.org/acme/app/pull-requests/8',
   );
   assert.equal(
-    ciFacts({ TF_BUILD: 'True', SYSTEM_TEAMFOUNDATIONCOLLECTIONURI: 'https://dev.azure.com/acme/', SYSTEM_TEAMPROJECT: 'Shop', BUILD_BUILDID: '11' }).ci_url,
+    ciFacts({ TF_BUILD: 'True', SYSTEM_TEAMFOUNDATIONCOLLECTIONURI: 'https://dev.azure.com/acme/', SYSTEM_TEAMPROJECT: 'Shop', BUILD_BUILDID: '11' }).ciUrl,
     'https://dev.azure.com/acme/Shop/_build/results?buildId=11',
   );
   assert.deepEqual(ciFacts({}), {});

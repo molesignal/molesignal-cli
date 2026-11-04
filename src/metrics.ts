@@ -127,7 +127,7 @@ export const metricsCommand: Command = {
       if (!promql) throw new UsageError("Which query? Run `molesignal metrics query 'rate(...[5m])'`");
       const limit = parseCount(values.limit ?? '1000', '--limit', 5000);
       const result = await withSession(values, (session) =>
-        session.call('query_metrics', { promql, time_range: timeWindow(values, '1h'), limit }),
+        session.call('query_metrics', { promql, timeRange: timeWindow(values, '1h'), limit }),
       );
       if (values.csv) {
         const rows = rowsOf(result);
@@ -147,8 +147,8 @@ export const metricsCommand: Command = {
     if (action === 'names') {
       const result = (await withSession(values, (session) =>
         session.read('list_metric_names', { limit, ...(rest[0] ? { query: rest.join(' ') } : {}) }),
-      )) as { metric_names?: string[] };
-      const names = result?.metric_names ?? [];
+      )) as { metricNames?: string[] };
+      const names = result?.metricNames ?? [];
       if (values.json) printJson(names);
       else if (names.length === 0) say('No metrics');
       else print(names);
@@ -172,7 +172,7 @@ export const metricsCommand: Command = {
       const label = rest[1];
       if (!label) throw new UsageError('Which label? Run `molesignal metrics values <metric> <label>`');
       const result = (await withSession(values, (session) =>
-        session.read('list_metric_label_values', { metric, label, time_range: timeWindow(values, '1h'), limit }),
+        session.read('list_metric_label_values', { metric, label, timeRange: timeWindow(values, '1h'), limit }),
       )) as { values?: { value: unknown; count: number }[] };
       const found = result?.values ?? [];
       if (values.json) printJsonLines(found);
@@ -186,7 +186,7 @@ export const metricsCommand: Command = {
       const result = (await withSession(values, (session) =>
         session.read('list_metric_series', {
           metric,
-          time_range: timeWindow(values, '1h'),
+          timeRange: timeWindow(values, '1h'),
           limit,
           ...(Object.keys(match).length ? { match } : {}),
         }),

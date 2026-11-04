@@ -13,9 +13,9 @@ export interface CiFacts {
   provider?: string | undefined;
   commit?: string | undefined;
   repository?: string | undefined;
-  pull_request?: string | undefined;
+  pullRequest?: string | undefined;
   author?: string | undefined;
-  ci_url?: string | undefined;
+  ciUrl?: string | undefined;
   environment?: string | undefined;
 }
 
@@ -35,9 +35,9 @@ export function ciFacts(env: NodeJS.ProcessEnv): CiFacts {
       provider: 'GitHub Actions',
       commit: present(env.GITHUB_SHA),
       repository,
-      pull_request: pull && repository ? `${repository}/pull/${pull}` : undefined,
+      pullRequest: pull && repository ? `${repository}/pull/${pull}` : undefined,
       author: present(env.GITHUB_ACTOR),
-      ci_url: repository && env.GITHUB_RUN_ID ? `${repository}/actions/runs/${env.GITHUB_RUN_ID}` : undefined,
+      ciUrl: repository && env.GITHUB_RUN_ID ? `${repository}/actions/runs/${env.GITHUB_RUN_ID}` : undefined,
     };
   }
   if (env.GITLAB_CI === 'true') {
@@ -45,10 +45,10 @@ export function ciFacts(env: NodeJS.ProcessEnv): CiFacts {
       provider: 'GitLab CI/CD',
       commit: present(env.CI_COMMIT_SHA),
       repository: present(env.CI_PROJECT_URL),
-      pull_request:
+      pullRequest:
         env.CI_PROJECT_URL && env.CI_MERGE_REQUEST_IID ? `${env.CI_PROJECT_URL}/-/merge_requests/${env.CI_MERGE_REQUEST_IID}` : undefined,
       author: present(env.GITLAB_USER_LOGIN ?? env.GITLAB_USER_NAME),
-      ci_url: present(env.CI_JOB_URL ?? env.CI_PIPELINE_URL),
+      ciUrl: present(env.CI_JOB_URL ?? env.CI_PIPELINE_URL),
       environment: present(env.CI_ENVIRONMENT_NAME),
     };
   }
@@ -57,9 +57,9 @@ export function ciFacts(env: NodeJS.ProcessEnv): CiFacts {
       provider: 'Jenkins',
       commit: present(env.GIT_COMMIT),
       repository: present(env.GIT_URL),
-      pull_request: present(env.CHANGE_URL),
+      pullRequest: present(env.CHANGE_URL),
       author: present(env.CHANGE_AUTHOR ?? env.BUILD_USER_ID),
-      ci_url: present(env.BUILD_URL),
+      ciUrl: present(env.BUILD_URL),
     };
   }
   if (env.CIRCLECI === 'true') {
@@ -67,9 +67,9 @@ export function ciFacts(env: NodeJS.ProcessEnv): CiFacts {
       provider: 'CircleCI',
       commit: present(env.CIRCLE_SHA1),
       repository: present(env.CIRCLE_REPOSITORY_URL),
-      pull_request: present(env.CIRCLE_PULL_REQUEST),
+      pullRequest: present(env.CIRCLE_PULL_REQUEST),
       author: present(env.CIRCLE_USERNAME),
-      ci_url: present(env.CIRCLE_BUILD_URL),
+      ciUrl: present(env.CIRCLE_BUILD_URL),
     };
   }
   if (env.BUILDKITE === 'true') {
@@ -78,7 +78,7 @@ export function ciFacts(env: NodeJS.ProcessEnv): CiFacts {
       commit: present(env.BUILDKITE_COMMIT),
       repository: present(env.BUILDKITE_REPO),
       author: present(env.BUILDKITE_BUILD_CREATOR),
-      ci_url: present(env.BUILDKITE_BUILD_URL),
+      ciUrl: present(env.BUILDKITE_BUILD_URL),
     };
   }
   if (env.BITBUCKET_BUILD_NUMBER) {
@@ -87,8 +87,8 @@ export function ciFacts(env: NodeJS.ProcessEnv): CiFacts {
       provider: 'Bitbucket Pipelines',
       commit: present(env.BITBUCKET_COMMIT),
       repository: origin,
-      pull_request: origin && env.BITBUCKET_PR_ID ? `${origin}/pull-requests/${env.BITBUCKET_PR_ID}` : undefined,
-      ci_url: origin ? `${origin}/addon/pipelines/home#!/results/${env.BITBUCKET_BUILD_NUMBER}` : undefined,
+      pullRequest: origin && env.BITBUCKET_PR_ID ? `${origin}/pull-requests/${env.BITBUCKET_PR_ID}` : undefined,
+      ciUrl: origin ? `${origin}/addon/pipelines/home#!/results/${env.BITBUCKET_BUILD_NUMBER}` : undefined,
       environment: present(env.BITBUCKET_DEPLOYMENT_ENVIRONMENT),
     };
   }
@@ -99,7 +99,7 @@ export function ciFacts(env: NodeJS.ProcessEnv): CiFacts {
       commit: present(env.BUILD_SOURCEVERSION),
       repository: present(env.BUILD_REPOSITORY_URI),
       author: present(env.BUILD_REQUESTEDFOR),
-      ci_url:
+      ciUrl:
         collection && env.SYSTEM_TEAMPROJECT && env.BUILD_BUILDID
           ? `${collection}${encodeURIComponent(env.SYSTEM_TEAMPROJECT)}/_build/results?buildId=${env.BUILD_BUILDID}`
           : undefined,
@@ -133,11 +133,11 @@ export interface DeploymentWrite {
   status?: string | undefined;
   commit?: string | undefined;
   repository?: string | undefined;
-  pull_request?: string | undefined;
+  pullRequest?: string | undefined;
   author?: string | undefined;
-  ci_url?: string | undefined;
+  ciUrl?: string | undefined;
   description?: string | undefined;
-  deployed_at?: number | undefined;
+  deployedAt?: number | undefined;
 }
 
 /** The deployment to record: what the options say, else what CI and git tell. */
@@ -147,9 +147,9 @@ export function deployment(options: DeploymentWrite, facts: CiFacts): Deployment
     environment: options.environment ?? facts.environment,
     commit: options.commit ?? facts.commit,
     repository: options.repository ?? facts.repository,
-    pull_request: options.pull_request ?? facts.pull_request,
+    pullRequest: options.pullRequest ?? facts.pullRequest,
     author: options.author ?? facts.author,
-    ci_url: options.ci_url ?? facts.ci_url,
+    ciUrl: options.ciUrl ?? facts.ciUrl,
   };
   return Object.fromEntries(Object.entries(written).filter(([, value]) => value !== undefined && value !== '')) as DeploymentWrite;
 }
@@ -278,11 +278,11 @@ Examples:
         status: values.status ?? (exit === 0 ? 'succeeded' : 'failed'),
         commit: values.commit,
         repository: values.repository,
-        pull_request: values['pull-request'],
+        pullRequest: values['pull-request'],
         author: values.author,
-        ci_url: values['ci-url'],
+        ciUrl: values['ci-url'],
         description: values.description,
-        deployed_at: values.time ? parseTime(values.time) : undefined,
+        deployedAt: values.time ? parseTime(values.time) : undefined,
       },
       { ...local, ...facts },
     );

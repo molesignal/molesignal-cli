@@ -11,7 +11,7 @@ export interface ImportItem {
   action: 'create' | 'update' | 'unchanged' | 'skip' | 'error';
   changes?: string[] | undefined;
   error?: string | undefined;
-  rule_id?: string | undefined;
+  ruleId?: string | undefined;
   /** The policy, schedule or routing rule written (the other kinds). */
   id?: string | undefined;
 }
@@ -139,14 +139,14 @@ export const alertsCommand: Command = {
     const createOnly = values['create-only'] ?? false;
 
     const tried = (await apiRequest(api, 'POST', `${noun.path}/import`, {
-      json: { content, dry_run: true, create_only: createOnly },
+      json: { content, dryRun: true, createOnly: createOnly },
     })) as ImportReport;
     const { writes, errors } = importCounts(tried);
 
     let report = tried;
     if (!values['dry-run'] && errors === 0 && writes > 0) {
       report = (await apiRequest(api, 'POST', `${noun.path}/import`, {
-        json: { content, dry_run: false, create_only: createOnly },
+        json: { content, dryRun: false, createOnly: createOnly },
       })) as ImportReport;
     }
 

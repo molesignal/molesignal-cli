@@ -29,11 +29,11 @@ test('a time is an ISO time, a local date and time, an epoch number, or a durati
 });
 
 test('a window runs from --from or --since back to --to or now', () => {
-  assert.deepEqual(timeWindow({}, '1h', NOW), { start_micros: NOW - 3_600_000_000, end_micros: NOW });
-  assert.deepEqual(timeWindow({ since: '15m' }, '1h', NOW), { start_micros: NOW - 900_000_000, end_micros: NOW });
+  assert.deepEqual(timeWindow({}, '1h', NOW), { startTime: NOW - 3_600_000_000, endTime: NOW });
+  assert.deepEqual(timeWindow({ since: '15m' }, '1h', NOW), { startTime: NOW - 900_000_000, endTime: NOW });
   assert.deepEqual(timeWindow({ from: '2h', to: '1h' }, '1h', NOW), {
-    start_micros: NOW - 7_200_000_000,
-    end_micros: NOW - 3_600_000_000,
+    startTime: NOW - 7_200_000_000,
+    endTime: NOW - 3_600_000_000,
   });
   assert.throws(() => timeWindow({ since: '1h', from: '2h' }, '1h', NOW), /not both/);
   assert.throws(() => timeWindow({ from: '1h', to: '2h' }, '1h', NOW), /ends before it starts/);

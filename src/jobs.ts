@@ -16,13 +16,13 @@ export interface SearchJob {
   id: string;
   state?: string | undefined;
   attempt?: number | undefined;
-  result_rows?: number | null | undefined;
+  resultRows?: number | null | undefined;
   error?: string | null | undefined;
   request?: { statement?: string; language?: string } | undefined;
-  submitted_at?: number | undefined;
-  started_at?: number | null | undefined;
-  finished_at?: number | null | undefined;
-  expires_at?: number | null | undefined;
+  submittedAt?: number | undefined;
+  startedAt?: number | null | undefined;
+  finishedAt?: number | null | undefined;
+  expiresAt?: number | null | undefined;
 }
 
 /** The jobs of a `list_search_jobs` or `get_search_job` result. */
@@ -39,15 +39,15 @@ export function formatJobs(jobs: SearchJob[], options: { color?: boolean; width?
   const rows = jobs.map((job) => [
     job.id,
     paint(color, stateColor(job.state ?? ''), job.state ?? ''),
-    typeof job.result_rows === 'number' ? formatCount(job.result_rows) : '',
-    job.submitted_at ? ago(job.submitted_at, options.now) : '',
+    typeof job.resultRows === 'number' ? formatCount(job.resultRows) : '',
+    job.submittedAt ? ago(job.submittedAt, options.now) : '',
     (job.request?.statement ?? '').replace(/\s+/g, ' '),
   ]);
   return table(['JOB', 'STATE', 'ROWS', 'SUBMITTED', 'STATEMENT'], rows, options);
 }
 
 async function getJob(session: ToolSession, id: string): Promise<SearchJob> {
-  const job = jobsOf(await session.read('get_search_job', { job_id: id }))[0];
+  const job = jobsOf(await session.read('get_search_job', { jobId: id }))[0];
   if (!job) throw new Error(`No search job ${id}`);
   return job;
 }
@@ -67,10 +67,10 @@ export async function downloadResults(
   };
 
   for (;;) {
-    const result = (await session.read('get_search_job_results', { job_id: id, page, page_size: 1000 })) as {
+    const result = (await session.read('get_search_job_results', { jobId: id, page, pageSize: 1000 })) as {
       state?: string;
       rows?: Record<string, unknown>[];
-      has_more?: boolean;
+      hasMore?: boolean;
       error?: string | null;
     };
     if (page === 1 && result.state !== 'done') {
@@ -89,7 +89,7 @@ export async function downloadResults(
       for (const row of rows) await write(`${JSON.stringify(row)}\n`);
     }
     written += rows.length;
-    if (!result.has_more || rows.length === 0) return written;
+    if (!result.hasMore || rows.length === 0) return written;
     page += 1;
   }
 }
@@ -116,11 +116,11 @@ export function submitRequest(statement: string, options: SubmitOptions, nowMicr
   return {
     language: options.promql ? 'promql' : 'sql',
     statement,
-    time_range: timeWindow(options, '1d', nowMicros),
-    ...(stream ? { stream: { name: stream, stream_type: streamType(options.type) } } : {}),
+    timeRange: timeWindow(options, '1d', nowMicros),
+    ...(stream ? { stream: { name: stream, streamType: streamType(options.type) } } : {}),
     ...(options.limit ? { limit: parseCount(options.limit, '--limit', 100_000) } : {}),
-    ...(options.step ? { step_micros: Math.round(parseDuration(options.step) * 1000) } : {}),
-    ...(options.keep ? { ttl_secs: Math.round(parseDuration(options.keep) / 1000) } : {}),
+    ...(options.step ? { step: Math.round(parseDuration(options.step) * 1000) } : {}),
+    ...(options.keep ? { ttlSecs: Math.round(parseDuration(options.keep) / 1000) } : {}),
   };
 }
 
@@ -218,7 +218,7 @@ export const searchJobsCommand: Command = {
             say(`Search job ${id} ${job.state}${job.error ? `: ${job.error}` : ''}`);
             return 1;
           }
-          say(`Search job ${id} done: ${formatCount(job.result_rows ?? 0)} rows; \`molesignal search-jobs results ${id}\` downloads them`);
+          say(`Search job ${id} done: ${formatCount(job.resultRows ?? 0)} rows; \`molesignal search-jobs results ${id}\` downloads them`);
           print(id);
           return 0;
         },
@@ -235,7 +235,7 @@ export const searchJobsCommand: Command = {
             reason: 'Cancelled from the molesignal command line',
             impact: `Search job ${id} stops and keeps no result`,
           });
-          return reportChange(await makeChange(session, 'cancel_search_job', { job_id: id }, options), `Cancelled search job ${id}`, options);
+          return reportChange(await makeChange(session, 'cancel_search_job', { jobId: id }, options), `Cancelled search job ${id}`, options);
         },
         confirmations(values),
       );
@@ -253,10 +253,10 @@ export const searchJobsCommand: Command = {
         if (value) lines.push(labelled(name, value, 12));
       };
       field('Statement', job.request?.statement);
-      field('Rows', typeof job.result_rows === 'number' ? String(job.result_rows) : undefined);
-      field('Submitted', job.submitted_at ? minute(job.submitted_at) : undefined);
-      field('Took', job.started_at && job.finished_at ? formatDuration((job.finished_at - job.started_at) / 1000) : undefined);
-      field('Kept until', job.expires_at ? minute(job.expires_at) : undefined);
+      field('Rows', typeof job.resultRows === 'number' ? String(job.resultRows) : undefined);
+      field('Submitted', job.submittedAt ? minute(job.submittedAt) : undefined);
+      field('Took', job.startedAt && job.finishedAt ? formatDuration((job.finishedAt - job.startedAt) / 1000) : undefined);
+      field('Kept until', job.expiresAt ? minute(job.expiresAt) : undefined);
       field('Error', job.error ?? undefined);
       print(lines);
       return;

@@ -84,7 +84,7 @@ Examples:
 
     if (values.web) {
       const signed = await signedIn(values);
-      const time = timeParam({ from: window.start_micros, to: values.to ? window.end_micros : undefined });
+      const time = timeParam({ from: window.startTime, to: values.to ? window.endTime : undefined });
       const url = logsPage(signed.credentials.connection.url, { stream, sql, time });
       say(`Opening ${url}`);
       openInBrowser(url);
@@ -93,7 +93,7 @@ Examples:
 
     const limit = parseCount(values.limit ?? '1000', '--limit', 5000);
     const result = await withSession(values, (session) =>
-      session.call('query_logs', { stream, sql, time_range: window, limit }),
+      session.call('query_logs', { stream, sql, timeRange: window, limit }),
     );
     const rows = rowsOf(result);
     const columns = columnsOf(result, rows);
@@ -104,10 +104,10 @@ Examples:
     else print(queryTable(columns, rows, { utc: values.utc, width: terminalWidth() }));
 
     if (process.stderr.isTTY && !values.json && !values.csv && result && typeof result === 'object') {
-      const stats = result as { scanned_rows?: number; took_ms?: number };
+      const stats = result as { scannedRows?: number; tookMs?: number };
       const parts = [`${rows.length} row${rows.length === 1 ? '' : 's'}`];
-      if (typeof stats.scanned_rows === 'number') parts.push(`scanned ${formatCount(stats.scanned_rows)}`);
-      if (typeof stats.took_ms === 'number') parts.push(formatDuration(stats.took_ms));
+      if (typeof stats.scannedRows === 'number') parts.push(`scanned ${formatCount(stats.scannedRows)}`);
+      if (typeof stats.tookMs === 'number') parts.push(formatDuration(stats.tookMs));
       say(parts.join(' · '));
     }
   },

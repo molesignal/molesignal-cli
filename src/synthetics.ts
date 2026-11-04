@@ -13,18 +13,18 @@ export interface Monitor {
   lifecycle?: string | undefined;
   state?: string | undefined;
   tags?: string[] | undefined;
-  next_due_at?: number | null | undefined;
+  nextDueAt?: number | null | undefined;
 }
 
 /** One run of a check at one location. */
 export interface SyntheticResult {
   id?: string | undefined;
-  task_id?: string | undefined;
-  location_id?: string | undefined;
+  taskId?: string | undefined;
+  locationId?: string | undefined;
   outcome?: string | undefined;
-  started_at?: number | undefined;
-  finished_at?: number | undefined;
-  attempts?: { error_message?: string | null; error_category?: string | null }[] | undefined;
+  startedAt?: number | undefined;
+  finishedAt?: number | undefined;
+  attempts?: { errorMessage?: string | null; errorCategory?: string | null }[] | undefined;
   assertions?: { passed?: boolean; message?: string | null }[] | undefined;
 }
 
@@ -43,8 +43,8 @@ function listOf<T>(value: unknown): T[] {
 /** Why a run failed, in a line: the error of its last attempt, else its first failed assertion. */
 export function failureOf(result: SyntheticResult): string {
   const attempt = result.attempts?.at(-1);
-  if (attempt?.error_message) return attempt.error_message;
-  if (attempt?.error_category) return attempt.error_category;
+  if (attempt?.errorMessage) return attempt.errorMessage;
+  if (attempt?.errorCategory) return attempt.errorCategory;
   const assertion = result.assertions?.find((one) => one.passed === false);
   return assertion?.message ?? '';
 }
@@ -57,10 +57,10 @@ export function formatResults(
 ): string[] {
   const color = options.color ?? false;
   const rows = results.map((result) => [
-    locations.get(result.location_id ?? '') ?? result.location_id ?? '',
+    locations.get(result.locationId ?? '') ?? result.locationId ?? '',
     paint(color, stateColor(result.outcome ?? ''), result.outcome ?? ''),
-    result.started_at && result.finished_at ? formatDuration((result.finished_at - result.started_at) / 1000) : '',
-    result.finished_at ? minute(result.finished_at) : '',
+    result.startedAt && result.finishedAt ? formatDuration((result.finishedAt - result.startedAt) / 1000) : '',
+    result.finishedAt ? minute(result.finishedAt) : '',
     PASSING.has(result.outcome ?? '') ? '' : failureOf(result),
   ]);
   return table(['LOCATION', 'OUTCOME', 'TOOK', 'FINISHED', 'WHY'], rows, options);
@@ -89,8 +89,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function awaitResults(session: ToolSession, monitorId: string, tasks: string[], timeout: number): Promise<SyntheticResult[]> {
   const deadline = Date.now() + timeout;
   for (;;) {
-    const results = listOf<SyntheticResult>(await session.read('list_synthetic_results', { monitor_id: monitorId, limit: 100 }));
-    const ours = results.filter((result) => result.task_id && tasks.includes(result.task_id));
+    const results = listOf<SyntheticResult>(await session.read('list_synthetic_results', { monitorId: monitorId, limit: 100 }));
+    const ours = results.filter((result) => result.taskId && tasks.includes(result.taskId));
     if (ours.length >= tasks.length || Date.now() >= deadline) return ours;
     await sleep(Math.min(3000, Math.max(0, deadline - Date.now())));
   }
@@ -143,7 +143,7 @@ export const syntheticsCommand: Command = {
         const monitor = await findMonitor(session, wanted);
         return {
           results: listOf<SyntheticResult>(
-            await session.read('list_synthetic_results', { monitor_id: monitor.id, time_range: timeWindow(values, '1d'), limit }),
+            await session.read('list_synthetic_results', { monitorId: monitor.id, timeRange: timeWindow(values, '1d'), limit }),
           ),
           locations: await locationNames(session),
         };
@@ -165,7 +165,7 @@ export const syntheticsCommand: Command = {
             reason: 'Run from the molesignal command line',
             impact: `Runs the check "${label}" once at each of its locations`,
           });
-          const outcome = await makeChange(session, 'run_synthetic_monitor', { monitor_id: monitor.id }, options);
+          const outcome = await makeChange(session, 'run_synthetic_monitor', { monitorId: monitor.id }, options);
           if (outcome.state === 'pending') return reportChange(outcome, '', options);
 
           const verification = outcome.execution.verification as { tasks?: { id?: string }[] } | undefined;

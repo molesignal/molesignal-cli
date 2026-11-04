@@ -139,7 +139,7 @@ export const sendCommand: Command = {
 Sends each line of stdin to a log stream: a line that is a JSON object as
 its fields, any other line as its message. Logs go in batches as they come,
 so it can follow a file (tail -f). Needs an API token whose role holds
-streams.write, such as an intake token.
+logs.write, such as an intake token.
 
 Options:
   --field <name=value>   Add a field to every log; may be given more than once
@@ -188,7 +188,7 @@ Runs the command, shows its output as usual, and sends each line of it to a
 log stream, then one more log with how it ended: its exit status and how
 long it took. Exits as the command did. For cron jobs, backups and scripts
 whose output should outlive the machine. Needs an API token whose role holds
-streams.write.
+logs.write.
 
 Each log has: message, output (stdout or stderr), command, run_id, host.
 

@@ -11,14 +11,14 @@ const schema = {
     enabled: { type: 'boolean' },
     tags: { type: 'array', items: { type: 'string' } },
     note: { type: ['string', 'null'] },
-    time_range: { type: 'object', properties: { start_micros: { type: 'integer' } } },
+    timeRange: { type: 'object', properties: { startTime: { type: 'integer' } } },
   },
 };
 
 test('name=value takes the type the tool asks for; name:=json is JSON as written', () => {
   assert.deepEqual(
     callArguments(
-      ['limit=20', 'ratio=0.5', 'enabled=true', 'tags=a, b', 'note=hello', 'time_range.start_micros=5', 'extra:={"a":[1,2]}'],
+      ['limit=20', 'ratio=0.5', 'enabled=true', 'tags=a, b', 'note=hello', 'timeRange.startTime=5', 'extra:={"a":[1,2]}'],
       schema,
     ),
     {
@@ -27,7 +27,7 @@ test('name=value takes the type the tool asks for; name:=json is JSON as written
       enabled: true,
       tags: ['a', 'b'],
       note: 'hello',
-      time_range: { start_micros: 5 },
+      timeRange: { startTime: 5 },
       extra: { a: [1, 2] },
     },
   );
@@ -48,7 +48,7 @@ test('tools are listed by what a call does and how the policy runs a change', ()
   assert.deepEqual(
     formatTools([
       { name: 'list_incidents', access: 'read_only', description: 'List incidents' },
-      { name: 'resolve_incident', access: 'managed_mutation', execution_mode: 'single_approval', description: 'Resolve one' },
+      { name: 'resolve_incident', access: 'managed_mutation', executionMode: 'single_approval', description: 'Resolve one' },
     ]),
     [
       'TOOL              CALL    POLICY           DESCRIPTION',

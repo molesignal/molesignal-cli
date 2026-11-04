@@ -29,14 +29,14 @@ test('incidents create sends the title, severity and who takes it', () => {
       urgency: 'high',
       services: ['checkout', 'payments'],
       labels: { env: 'prod', region: 'eu' },
-      assign: { kind: 'users', user_ids: ['u1', 'u2'] },
-      declare_major: true,
+      assign: { kind: 'users', userIds: ['u1', 'u2'] },
+      declareMajor: true,
       description: 'Three tickets in ten minutes.',
     },
   );
 
-  assert.deepEqual(createInput({ title: 'x', team: 't1' }).assign, { kind: 'team', team_id: 't1' });
-  assert.deepEqual(createInput({ title: 'x', policy: 'p1' }).assign, { kind: 'policy', escalation_policy_id: 'p1' });
+  assert.deepEqual(createInput({ title: 'x', team: 't1' }).assign, { kind: 'team', teamId: 't1' });
+  assert.deepEqual(createInput({ title: 'x', policy: 'p1' }).assign, { kind: 'policy', escalationPolicyId: 'p1' });
 });
 
 test('incidents create refuses what MoleSignal would refuse', () => {

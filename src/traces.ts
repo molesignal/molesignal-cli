@@ -6,38 +6,38 @@ import { openInBrowser, pageOf } from './web.js';
 
 /** A trace as `list_traces` sums it up. */
 export interface TraceSummary {
-  trace_id: string;
+  traceId: string;
   service?: string | null | undefined;
-  started_at_micros?: number | undefined;
-  duration_ms?: number | undefined;
-  span_count?: number | undefined;
-  has_error?: boolean | null | undefined;
+  startedAt?: number | undefined;
+  durationMs?: number | undefined;
+  spanCount?: number | undefined;
+  hasError?: boolean | null | undefined;
 }
 
 /** A span as `get_trace` returns it. */
 export interface Span {
-  span_id: string;
-  parent_span_id?: string | null | undefined;
+  spanId: string;
+  parentSpanId?: string | null | undefined;
   service?: string | undefined;
   operation?: string | undefined;
-  start_ns: number;
-  end_ns: number;
-  duration_ns?: number | undefined;
+  startNs: number;
+  endNs: number;
+  durationNs?: number | undefined;
   status?: string | undefined;
-  status_message?: string | null | undefined;
+  statusMessage?: string | null | undefined;
 }
 
 /** The traces of a `list_traces` result. */
 export function tracesOf(result: unknown): TraceSummary[] {
   const traces = result && typeof result === 'object' && 'traces' in result ? (result.traces as unknown) : undefined;
-  return Array.isArray(traces) ? traces.filter((trace): trace is TraceSummary => typeof trace?.trace_id === 'string') : [];
+  return Array.isArray(traces) ? traces.filter((trace): trace is TraceSummary => typeof trace?.traceId === 'string') : [];
 }
 
 /** The spans of a `get_trace` result. */
 export function spansOf(result: unknown): Span[] {
   const spans = result && typeof result === 'object' && 'spans' in result ? (result.spans as unknown) : undefined;
   return Array.isArray(spans)
-    ? spans.filter((span): span is Span => typeof span?.span_id === 'string' && typeof span.start_ns === 'number')
+    ? spans.filter((span): span is Span => typeof span?.spanId === 'string' && typeof span.startNs === 'number')
     : [];
 }
 
@@ -45,26 +45,26 @@ const failed = (span: Span) => /^(error|status_code_error|2)$/i.test(span.status
 
 /** The spans in the order a waterfall shows them, each with the tree lines before its name. */
 export function waterfallOrder(spans: Span[]): { span: Span; prefix: string }[] {
-  const ids = new Set(spans.map((span) => span.span_id));
+  const ids = new Set(spans.map((span) => span.spanId));
   const children = new Map<string, Span[]>();
   const roots: Span[] = [];
   for (const span of spans) {
-    const parent = span.parent_span_id;
-    if (parent && ids.has(parent) && parent !== span.span_id) {
+    const parent = span.parentSpanId;
+    if (parent && ids.has(parent) && parent !== span.spanId) {
       children.set(parent, [...(children.get(parent) ?? []), span]);
     } else {
       roots.push(span);
     }
   }
 
-  const byStart = (left: Span, right: Span) => left.start_ns - right.start_ns;
+  const byStart = (left: Span, right: Span) => left.startNs - right.startNs;
   const ordered: { span: Span; prefix: string }[] = [];
   const visited = new Set<string>();
   const visit = (span: Span, lead: string, branch: string) => {
-    if (visited.has(span.span_id)) return;
-    visited.add(span.span_id);
+    if (visited.has(span.spanId)) return;
+    visited.add(span.spanId);
     ordered.push({ span, prefix: lead + branch });
-    const below = [...(children.get(span.span_id) ?? [])].sort(byStart);
+    const below = [...(children.get(span.spanId) ?? [])].sort(byStart);
     const next = lead + (branch === '└─ ' ? '   ' : branch === '├─ ' ? '│  ' : '');
     below.forEach((child, index) => visit(child, next, index === below.length - 1 ? '└─ ' : '├─ '));
   };
@@ -80,8 +80,8 @@ export function waterfallOrder(spans: Span[]): { span: Span; prefix: string }[] 
 export function formatWaterfall(spans: Span[], options: { color?: boolean; width?: number | undefined } = {}): string[] {
   if (spans.length === 0) return [];
   const color = options.color ?? false;
-  const start = Math.min(...spans.map((span) => span.start_ns));
-  const end = Math.max(...spans.map((span) => span.end_ns));
+  const start = Math.min(...spans.map((span) => span.startNs));
+  const end = Math.max(...spans.map((span) => span.endNs));
   const total = Math.max(1, end - start);
 
   const lines = waterfallOrder(spans).map(({ span, prefix }) => ({
@@ -93,10 +93,10 @@ export function formatWaterfall(spans: Span[], options: { color?: boolean; width
   const track = Math.max(10, Math.min(60, room - labelWidth - 12));
 
   return lines.map(({ span, label }) => {
-    const offset = Math.min(track - 1, Math.floor(((span.start_ns - start) / total) * track));
-    const length = Math.max(1, Math.min(track - offset, Math.round(((span.end_ns - span.start_ns) / total) * track)));
+    const offset = Math.min(track - 1, Math.floor(((span.startNs - start) / total) * track));
+    const length = Math.max(1, Math.min(track - offset, Math.round(((span.endNs - span.startNs) / total) * track)));
     const bar = `${' '.repeat(offset)}${'█'.repeat(length)}${' '.repeat(track - offset - length)}`;
-    const took = formatDuration((span.duration_ns ?? span.end_ns - span.start_ns) / 1_000_000);
+    const took = formatDuration((span.durationNs ?? span.endNs - span.startNs) / 1_000_000);
     const name = padTo(cut(label, labelWidth), labelWidth);
     const code = failed(span) ? '31' : undefined;
     return `${paint(color, code, name)}  ${paint(color, code ?? '36', bar)}  ${took}`;
@@ -153,15 +153,15 @@ Examples:
         openInBrowser(url);
         return;
       }
-      const timed = values.since || values.from ? { time_range: timeWindow(values, '1h') } : {};
-      const result = await withSession(values, (session) => session.call('get_trace', { trace_id: id, ...timed }));
+      const timed = values.since || values.from ? { timeRange: timeWindow(values, '1h') } : {};
+      const result = await withSession(values, (session) => session.call('get_trace', { traceId: id, ...timed }));
       if (values.json) {
         printJson(result);
         return;
       }
       const spans = spansOf(result);
-      const first = Math.min(...spans.map((span) => span.start_ns));
-      const last = Math.max(...spans.map((span) => span.end_ns));
+      const first = Math.min(...spans.map((span) => span.startNs));
+      const last = Math.max(...spans.map((span) => span.endNs));
       const failures = spans.filter(failed).length;
       say(
         `${id} · ${spans.length} span${spans.length === 1 ? '' : 's'} · ${formatDuration((last - first) / 1_000_000)}` +
@@ -178,11 +178,11 @@ Examples:
     const traces = await withSession(values, async (session) =>
       tracesOf(
         await session.call('list_traces', {
-          time_range: timeWindow(values, '1h'),
+          timeRange: timeWindow(values, '1h'),
           limit,
           ...(values.service ? { service: values.service } : {}),
-          ...(values.errors ? { error_only: true } : {}),
-          ...(minimum !== undefined ? { min_duration_ms: minimum } : {}),
+          ...(values.errors ? { errorOnly: true } : {}),
+          ...(minimum !== undefined ? { minDurationMs: minimum } : {}),
         }),
       ),
     );
@@ -191,10 +191,10 @@ Examples:
     else if (traces.length === 0) say('No traces in that time');
     else {
       const rows = traces.map((trace) => [
-        trace.trace_id,
-        trace.started_at_micros ? minute(trace.started_at_micros) : '',
-        trace.duration_ms === undefined ? '' : formatDuration(trace.duration_ms),
-        trace.span_count === undefined ? '' : String(trace.span_count),
+        trace.traceId,
+        trace.startedAt ? minute(trace.startedAt) : '',
+        trace.durationMs === undefined ? '' : formatDuration(trace.durationMs),
+        trace.spanCount === undefined ? '' : String(trace.spanCount),
         trace.service ?? '',
       ]);
       print(table(['TRACE', 'STARTED', 'DURATION', 'SPANS', 'SERVICE'], rows, { width: terminalWidth() }));

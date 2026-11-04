@@ -36,7 +36,7 @@ async function fakeMoleSignal() {
     calls.push(message.params);
     const { name, arguments: args } = message.params;
     if (name === 'list_streams') {
-      const streams = { streams: [{ name: 'app_logs', field_count: 9, retention: null }], limit: 1000 };
+      const streams = { streams: [{ name: 'app_logs', fieldCount: 9, retention: null }], limit: 1000 };
       return answer({ result: { content: [{ type: 'text', text: JSON.stringify(streams) }], structuredContent: streams } });
     }
     if (name === 'call_read_tool' && args.name === 'list_synthetic_monitors') {
@@ -62,9 +62,9 @@ test('a tool call returns its structured result, and a refusal says why', { time
     const session = await ToolSession.open({ connection: { url: molesignal.url, token: 'good' } }, 'test');
     assert.equal(session.server.name, 'MoleSignal');
 
-    const listed = await session.call('list_streams', { stream_type: 'logs', limit: 1000 });
+    const listed = await session.call('list_streams', { streamType: 'logs', limit: 1000 });
     assert.deepEqual(listed.streams.map((stream) => stream.name), ['app_logs']);
-    assert.deepEqual(molesignal.calls[0], { name: 'list_streams', arguments: { stream_type: 'logs', limit: 1000 } });
+    assert.deepEqual(molesignal.calls[0], { name: 'list_streams', arguments: { streamType: 'logs', limit: 1000 } });
 
     await assert.rejects(
       session.call('query_logs', { stream: 'app_logs' }),

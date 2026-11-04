@@ -37,8 +37,8 @@ export function parseTime(text: string, nowMicros = Date.now() * 1000): number {
 
 /** A window of time as the tools take it. */
 export interface TimeWindow {
-  start_micros: number;
-  end_micros: number;
+  startTime: number;
+  endTime: number;
 }
 
 /**
@@ -56,7 +56,7 @@ export function timeWindow(
     ? parseTime(options.from, nowMicros)
     : end - Math.round(parseDuration(options.since ?? defaultSince) * 1000);
   if (start >= end) throw new Error('The window ends before it starts: --from must come before --to');
-  return { start_micros: start, end_micros: end };
+  return { startTime: start, endTime: end };
 }
 
 /** A moment as a clock reads it: `2026-10-26 14:03:12.345`, local or UTC. */

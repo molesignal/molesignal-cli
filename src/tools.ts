@@ -159,7 +159,7 @@ export class ToolSession {
    * once, the execution.
    */
   manage(name: string, args: Record<string, unknown>, idempotencyKey: string): Promise<unknown> {
-    return this.call('call_managed_tool', { name, arguments: args, idempotency_key: idempotencyKey });
+    return this.call('call_managed_tool', { name, arguments: args, idempotencyKey: idempotencyKey });
   }
 
   /** Reads one resource MoleSignal publishes as JSON, such as `molesignal://tools/catalog`. */

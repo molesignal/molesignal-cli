@@ -224,9 +224,9 @@ ${CONNECTION_HELP}`,
     const org = (profile.org ?? {}) as { name?: string; slug?: string; id?: string };
     const permissions = Array.isArray(capabilities.permissions) ? (capabilities.permissions as string[]) : [];
     print([
-      `${String(profile.display_name ?? '')}${profile.email ? ` <${String(profile.email)}>` : ''}`,
-      `  organization: ${org.name ?? org.id ?? String(capabilities.org_id ?? '')}`,
-      `  role: ${String(profile.display_role || capabilities.display_role || '')}`,
+      `${String(profile.displayName ?? '')}${profile.email ? ` <${String(profile.email)}>` : ''}`,
+      `  organization: ${org.name ?? org.id ?? String(capabilities.orgId ?? '')}`,
+      `  role: ${String(profile.displayRole || capabilities.displayRole || '')}`,
       `  permissions: ${permissions.length}${permissions.length ? ` (${permissions.slice(0, 6).join(', ')}${permissions.length > 6 ? ', …' : ''})` : ''}`,
       `  signed in with: ${signed.credentials.connection.token ? 'an API token' : 'the browser'}, profile ${signed.profile}`,
     ]);

@@ -52,12 +52,12 @@ test('a PromQL range result is one series a label set, with its trend', () => {
 test('a trace is drawn as a waterfall, children under their parent, failures marked', () => {
   const ms = 1_000_000;
   const spans = [
-    { span_id: 'b', parent_span_id: 'a', service: 'db', operation: 'SELECT', start_ns: 10 * ms, end_ns: 30 * ms, status: 'OK' },
-    { span_id: 'a', parent_span_id: null, service: 'api', operation: 'GET /orders', start_ns: 0, end_ns: 100 * ms, status: 'OK' },
-    { span_id: 'c', parent_span_id: 'a', service: 'cache', operation: 'GET', start_ns: 40 * ms, end_ns: 50 * ms, status: 'ERROR' },
+    { spanId: 'b', parentSpanId: 'a', service: 'db', operation: 'SELECT', startNs: 10 * ms, endNs: 30 * ms, status: 'OK' },
+    { spanId: 'a', parentSpanId: null, service: 'api', operation: 'GET /orders', startNs: 0, endNs: 100 * ms, status: 'OK' },
+    { spanId: 'c', parentSpanId: 'a', service: 'cache', operation: 'GET', startNs: 40 * ms, endNs: 50 * ms, status: 'ERROR' },
   ];
   assert.deepEqual(
-    waterfallOrder(spans).map(({ span, prefix }) => `${prefix}${span.span_id}`),
+    waterfallOrder(spans).map(({ span, prefix }) => `${prefix}${span.spanId}`),
     ['a', '├─ b', '└─ c'],
   );
   const lines = formatWaterfall(spans, { width: 80 });
@@ -70,7 +70,7 @@ test('incidents and services read as tables', () => {
   const now = 10_000_000_000;
   assert.deepEqual(
     formatIncidents(
-      [{ id: 'i1', status: 'open', severity: 'critical', created_at: now - 300_000_000, affected_services: ['checkout'], summary: 'Errors up' }],
+      [{ id: 'i1', status: 'open', severity: 'critical', createdAt: now - 300_000_000, affectedServices: ['checkout'], summary: 'Errors up' }],
       { now },
     ),
     ['INCIDENT  STATUS  SEVERITY  OPENED  SERVICES  SUMMARY', 'i1        open    critical  5m ago  checkout  Errors up'],
@@ -79,18 +79,18 @@ test('incidents and services read as tables', () => {
     formatServices([
       {
         service: { namespace: 'shop', name: 'checkout', environment: 'prod' },
-        red: { request_count: 12_345, error_rate: 0.012, p95_micros: 250_000 },
+        red: { requestCount: 12_345, errorRate: 0.012, p95Time: 250_000 },
         health: 'warning',
-        current_version: '2.4.0',
+        currentVersion: '2.4.0',
       },
     ]),
     ['SERVICE        ENV   REQUESTS  ERRORS  P95    HEALTH   VERSION', 'shop/checkout  prod  12k       1.2%    250ms  warning  2.4.0'],
   );
   const comparison = formatComparison({
-    baseline: { version: '2.3.9', red: { request_count: 1000, error_rate: 0.01, p95_micros: 200_000 } },
-    candidate: { version: '2.4.0', red: { request_count: 900, error_rate: 0.05, p95_micros: 400_000 } },
+    baseline: { version: '2.3.9', red: { requestCount: 1000, errorRate: 0.01, p95Time: 200_000 } },
+    candidate: { version: '2.4.0', red: { requestCount: 900, errorRate: 0.05, p95Time: 400_000 } },
     status: 'regressed',
-    regressed_transactions: [{}, {}],
+    regressedTransactions: [{}, {}],
   });
   assert.equal(comparison.at(-1), 'regressed · 2 endpoints slower or failing more');
 });

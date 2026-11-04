@@ -6,10 +6,10 @@ import { formatImport, importCounts } from '../dist/index.js';
 const REPORT = {
   format: 'prometheus',
   items: [
-    { name: 'HighErrorRate', action: 'create', rule_id: 'r1' },
-    { name: 'DiskFull', action: 'update', changes: ['query', 'trigger'], rule_id: 'r2' },
+    { name: 'HighErrorRate', action: 'create', ruleId: 'r1' },
+    { name: 'DiskFull', action: 'update', changes: ['query', 'trigger'], ruleId: 'r2' },
     { name: 'TargetDown', action: 'error', error: 'no escalation policy is named `ops`' },
-    { name: 'Latency', action: 'unchanged', rule_id: 'r3' },
+    { name: 'Latency', action: 'unchanged', ruleId: 'r3' },
   ],
   notes: ['recording rule `job:errors` in group `api` is not imported'],
   applied: false,

@@ -16,9 +16,9 @@ export interface ToolInfo {
   category?: string | undefined;
   risk?: string | undefined;
   access?: string | undefined;
-  execution_mode?: string | undefined;
-  required_permissions?: string[] | undefined;
-  input_schema?: unknown;
+  executionMode?: string | undefined;
+  requiredPermissions?: string[] | undefined;
+  inputSchema?: unknown;
 }
 
 /** The tools of a `tool_search` result or of the `molesignal://tools/catalog` resource. */
@@ -40,7 +40,7 @@ export function formatTools(tools: ToolInfo[], options: { width?: number | undef
   const rows = tools.map((tool) => [
     tool.name,
     accessWord(tool.access),
-    accessWord(tool.access) === 'change' ? (tool.execution_mode ?? '').replace('_', ' ') : '',
+    accessWord(tool.access) === 'change' ? (tool.executionMode ?? '').replace('_', ' ') : '',
     tool.description ?? '',
   ]);
   return table(['TOOL', 'CALL', 'POLICY', 'DESCRIPTION'], rows, options);
@@ -48,7 +48,7 @@ export function formatTools(tools: ToolInfo[], options: { width?: number | undef
 
 /** The one tool of that exact name, with its input schema. */
 async function findTool(session: ToolSession, name: string): Promise<ToolInfo> {
-  const found = toolsOf(await session.call('tool_search', { query: name, limit: 10, include_schema: true }));
+  const found = toolsOf(await session.call('tool_search', { query: name, limit: 10, includeSchema: true }));
   const tool = found.find((candidate) => candidate.name === name);
   if (!tool) throw new Error(`No tool ${name} you may call: \`molesignal tools <words>\` finds tools`);
   return tool;
@@ -91,7 +91,7 @@ function typed(text: string, type: string | undefined, key: string): unknown {
 /**
  * The arguments of `molesignal call`, from `name=value` (text, turned into
  * the type the tool's schema asks for) and `name:=json` (JSON as written).
- * A dotted name sets a field inside an object: `time_range.start_micros:=0`.
+ * A dotted name sets a field inside an object: `timeRange.startTime:=0`.
  */
 export function callArguments(pairs: string[], schema: unknown, base: Record<string, unknown> = {}): Record<string, unknown> {
   const args: Record<string, unknown> = structuredClone(base);
@@ -153,9 +153,9 @@ Examples:
         printJson(tool);
         return;
       }
-      const lines = [`${tool.name} · ${accessWord(tool.access)}${accessWord(tool.access) === 'change' ? ` · ${tool.execution_mode ?? ''}` : ''}`, tool.description ?? '', ''];
-      if (tool.required_permissions?.length) lines.push(`Permissions: ${tool.required_permissions.join(', ')}`, '');
-      lines.push('Arguments:', JSON.stringify(tool.input_schema ?? {}, null, 2));
+      const lines = [`${tool.name} · ${accessWord(tool.access)}${accessWord(tool.access) === 'change' ? ` · ${tool.executionMode ?? ''}` : ''}`, tool.description ?? '', ''];
+      if (tool.requiredPermissions?.length) lines.push(`Permissions: ${tool.requiredPermissions.join(', ')}`, '');
+      lines.push('Arguments:', JSON.stringify(tool.inputSchema ?? {}, null, 2));
       print(lines);
       return;
     }
@@ -167,7 +167,7 @@ Examples:
         if (all) return values.domain ? all.filter((tool) => tool.domain === values.domain) : all;
       }
       return toolsOf(
-        await session.call('tool_search', { query: words, limit: 50, include_schema: false, ...(values.domain ? { domain: values.domain } : {}) }),
+        await session.call('tool_search', { query: words, limit: 50, includeSchema: false, ...(values.domain ? { domain: values.domain } : {}) }),
       );
     });
     if (values.json) printJsonLines(tools);
@@ -225,9 +225,9 @@ Examples:
       values,
       async (session, signed) => {
         const tool = await findTool(session, name);
-        const callArgs = callArguments(pairs, tool.input_schema, base);
-        if ((values.since || values.from || values.to) && propertyType(tool.input_schema, ['time_range'])) {
-          callArgs.time_range = timeWindow(values, '1h');
+        const callArgs = callArguments(pairs, tool.inputSchema, base);
+        if ((values.since || values.from || values.to) && propertyType(tool.inputSchema, ['timeRange'])) {
+          callArgs.timeRange = timeWindow(values, '1h');
         }
 
         const access = accessWord(tool.access);

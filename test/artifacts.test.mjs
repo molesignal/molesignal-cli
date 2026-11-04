@@ -71,7 +71,7 @@ test('an upload is a form with the build, the kind and the file, gzipped', async
       map,
     );
     const { fields, file } = readMultipart(api.requests[0]);
-    assert.deepEqual(fields, { application_id: 'checkout-web', service: 'web', release: '1.0.0', kind: 'javascript_sourcemap', platform: 'web' });
+    assert.deepEqual(fields, { applicationId: 'checkout-web', service: 'web', release: '1.0.0', kind: 'javascript_sourcemap', platform: 'web' });
     assert.equal(file.name, 'app.js.map');
     assert.equal(gunzipSync(file.bytes).toString(), '{"version":3,"mappings":""}');
   } finally {

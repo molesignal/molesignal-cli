@@ -5,8 +5,8 @@ import { print, printJsonLines, say, table, terminalWidth } from './output.js';
 /** A stream as `list_streams` describes it. */
 export interface StreamSummary {
   name: string;
-  stream_type?: string | undefined;
-  field_count?: number | undefined;
+  streamType?: string | undefined;
+  fieldCount?: number | undefined;
   retention?: { days?: number | undefined } | null | undefined;
   description?: string | null | undefined;
 }
@@ -27,7 +27,7 @@ export function streamsOf(result: unknown): StreamSummary[] {
 export function formatStreams(streams: StreamSummary[], options: { width?: number | undefined } = {}): string[] {
   const rows = streams.map((stream) => [
     stream.name,
-    stream.field_count === undefined ? '' : String(stream.field_count),
+    stream.fieldCount === undefined ? '' : String(stream.fieldCount),
     stream.retention?.days ? `${stream.retention.days}d` : 'default',
     stream.description?.trim() ?? '',
   ]);
@@ -64,7 +64,7 @@ ${CONNECTION_HELP}`,
     });
     const type = streamType(values.type);
     const list = await withSession(values, async (session) =>
-      streamsOf(await session.call('list_streams', { stream_type: type, limit: 1000 })),
+      streamsOf(await session.call('list_streams', { streamType: type, limit: 1000 })),
     );
 
     if (values.json) printJsonLines(list);

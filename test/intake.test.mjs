@@ -43,8 +43,8 @@ test('a busy server is tried again; a refusal ends the sending', async () => {
   assert.match(notices[0], /trying again/);
 
   const refused = new IntakeSender(async () => {
-    throw new ApiError(403, 'no streams.write');
+    throw new ApiError(403, 'no logs.write');
   }, 10, () => undefined);
   refused.add({ message: 'one' });
-  await assert.rejects(refused.close(), /no streams\.write/);
+  await assert.rejects(refused.close(), /no logs\.write/);
 });
