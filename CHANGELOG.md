@@ -1,18 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
-- **camelCase keys, times without `_micros`.** What the command sends to
-  MoleSignal and reads back, tool arguments included, is named in camelCase,
-  and times drop the unit from their names: `timeRange.startTime` and
-  `endTime`, `step`, `anchorTime`, `atTime`, `timeStart` and `timeEnd`, still
-  in microseconds. It needs a MoleSignal server that names them so; 0.3.0 does
-  not work with such a server. `molesignal call` takes arguments as the tool's
-  schema names them, such as `timeRange.startTime=…`, and `--json` prints the
-  new names.
-- **For code that imports the package,** `timeWindow()` returns
-  `{ startTime, endTime }`, and `ToolInfo` has `executionMode`,
-  `requiredPermissions` and `inputSchema`.
+### Changed
+
+- Updated command requests, responses, tool arguments and JSON output to use camelCase API fields.
+- Updated time fields, `timeWindow()` and `ToolInfo` to match the current API schema.
 
 ## 0.3.0
 
