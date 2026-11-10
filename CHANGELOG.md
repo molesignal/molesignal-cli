@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+### Changed
+
+- `fields` takes a field's index from `indexType` alone, as the server reports it.
+
 ## 0.4.0
 
 ### Changed
