@@ -9,8 +9,7 @@ export interface FieldInfo {
   name: string;
   dataType?: string | undefined;
   nullable?: boolean | undefined;
-  indexType?: string | null | undefined;
-  indexed?: boolean | undefined;
+  indexType?: string | undefined;
 }
 
 /** The fields of a `get_stream_schema` result. */
@@ -22,10 +21,9 @@ export function fieldsOf(result: unknown): FieldInfo[] {
     : [];
 }
 
-/** How a field is indexed, in a word: its index type, `yes` from an older schema, or nothing. */
+/** How a field is indexed, in a word: its index type, or nothing. */
 function indexOf(field: FieldInfo): string {
-  if (field.indexType && field.indexType !== 'none') return field.indexType;
-  return field.indexType === undefined && field.indexed ? 'yes' : '';
+  return field.indexType && field.indexType !== 'none' ? field.indexType : '';
 }
 
 /** The values of a `search_field_values` result, most common first. */
